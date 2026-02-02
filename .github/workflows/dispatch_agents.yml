@@ -54,7 +54,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mentions="${{ steps.parse_issue.outputs.mentions || steps.parse_comment.outputs.mentions }}"
+          # 使用单引号包裹 JSON 以避免 bash 解析问题
+          mentions='${{ steps.parse_issue.outputs.mentions || steps.parse_comment.outputs.mentions }}'
 
           if [ -z "$mentions" ] || [ "$mentions" = "[]" ]; then
             echo "No mentions found, skipping dispatch"
