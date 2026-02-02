@@ -4,7 +4,7 @@ import argparse
 import os
 import subprocess
 import tempfile
-from issuelab.sdk_executor import run_agents_parallel
+from issuelab.sdk_executor import run_agents_parallel, run_observer, get_agent_matrix_markdown, discover_agents
 from issuelab.parser import parse_mentions
 
 # 评论最大长度 (GitHub 限制 65536，实际使用 10000 留余量)
@@ -83,19 +83,37 @@ def main():
     review_parser.add_argument("--comments", type=str, default="", help="Issue 所有评论内容")
     review_parser.add_argument("--comment-count", type=int, default=0, help="评论数量")
 
+    # Observer 监控命令
+    observe_parser = subparsers.add_parser("observe", help="运行 Observer Agent 分析 Issue")
+    observe_parser.add_argument("--issue", type=int, required=True, help="Issue 编号")
+    observe_parser.add_argument("--context", type=str, default="", help="Issue 内容上下文")
+    observe_parser.add_argument("--title", type=str, default="", help="Issue 标题")
+    observe_parser.add_argument("--comments", type=str, default="", help="Issue 所有评论内容")
+    observe_parser.add_argument("--comment-count", type=int, default=0, help="评论数量")
+    observe_parser.add_argument("--post", action="store_true", help="自动发布触发评论到 Issue")
+
+    # 列出所有可用 Agent
+    list_parser = subparsers.add_parser("list-agents", help="列出所有可用的 Agent")
+
     args = parser.parse_args()
 
-    # 构建上下文
-    context = ""
-    if args.context:
-        title = getattr(args, "title", "") or ""
-        context = f"**Issue 标题**: {title}\n\n**Issue 内容**:\n{args.context}"
+    # 根据命令类型处理
+    if args.command == "execute" or args.command == "review" or args.command == "observe":
+        # 构建上下文
+        context = ""
+        if getattr(args, "context", ""):
+            title = getattr(args, "title", "") or ""
+            context = f"**Issue 标题**: {title}\n\n**Issue 内容**:\n{args.context}"
 
-    # 如果有评论，添加到上下文
-    comment_count = getattr(args, "comment_count", 0) or 0
-    comments = getattr(args, "comments", "") or ""
-    if comment_count > 0 and comments:
-        context += f"\n\n**本 Issue 共有 {comment_count} 条历史评论，请仔细阅读并分析：**\n\n{comments}"
+        # 如果有评论，添加到上下文
+        comment_count = getattr(args, "comment_count", 0) or 0
+        comments = getattr(args, "comments", "") or ""
+        if comment_count > 0 and comments:
+            context += f"\n\n**本 Issue 共有 {comment_count} 条历史评论，请仔细阅读并分析：**\n\n{comments}"
+    else:
+        context = ""
+        comment_count = 0
+        comments = ""
 
     if args.command == "execute":
         agents = args.agents.split()
@@ -128,6 +146,51 @@ def main():
                     print(f"✅ {agent_name} response posted to issue #{args.issue}")
                 else:
                     print(f"❌ Failed to post {agent_name} response")
+
+    elif args.command == "observe":
+        # 运行 Observer Agent 分析 Issue
+        result = asyncio.run(run_observer(
+            args.issue,
+            getattr(args, "title", "") or "",
+            args.context or "",
+            comments or ""
+        ))
+
+        print(f"\n=== Observer Analysis for Issue #{args.issue} ===")
+        print(f"\nAnalysis:\n{result.get('analysis', 'N/A')}")
+        print(f"\nShould Trigger: {result.get('should_trigger', False)}")
+        if result.get('should_trigger'):
+            print(f"Agent: {result.get('agent', 'N/A')}")
+            print(f"Trigger Comment: {result.get('comment', 'N/A')}")
+            print(f"Reason: {result.get('reason', 'N/A')}")
+
+            # 如果需要，自动发布触发评论
+            if getattr(args, "post", False):
+                if result.get('comment') and post_comment(args.issue, result['comment']):
+                    print(f"\n✅ Trigger comment posted to issue #{args.issue}")
+                else:
+                    print(f"\n❌ Failed to post trigger comment")
+        else:
+            print(f"Skip Reason: {result.get('reason', 'N/A')}")
+
+    elif args.command == "list-agents":
+        # 列出所有可用的 Agent
+        agents = discover_agents()
+        print("\n=== Available Agents ===\n")
+        print(f"{'Agent':<15} {'Description':<50} {'Trigger Conditions'}")
+        print("-" * 100)
+        for name, config in agents.items():
+            conditions = config.get('trigger_conditions', [])
+            if conditions and all(isinstance(c, str) for c in conditions):
+                conditions_str = ", ".join(conditions)
+            else:
+                conditions_str = "auto-detect"
+            desc = config.get('description', '')[:48]
+            print(f"{name:<15} {desc:<50} {conditions_str[:40]}")
+
+        print("\n\n=== Agent Matrix (for Observer) ===\n")
+        print(get_agent_matrix_markdown())
+
     else:
         parser.print_help()
 
