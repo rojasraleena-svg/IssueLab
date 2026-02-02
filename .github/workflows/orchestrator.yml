@@ -75,12 +75,24 @@ jobs:
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
           ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          LOG_FILE: ${{ github.workspace }}/logs/auto_review_${{ github.event.issue.number }}.log
+          LOG_LEVEL: DEBUG
           ENABLE_ARXIV_MCP: true
           ENABLE_GITHUB_MCP: false
           # SDK 优化：跳过版本检查，节省 2 秒
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           # SDK 优化：减少等待时间
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
+
+      # 上传日志文件
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-review-logs-${{ github.event.issue.number }}-${{ github.run_id }}
+          path: logs/
+          retention-days: 7
+          if-no-files-found: ignore
 
   # ========== @mention 触发（并行执行） ==========
   process-mention:
@@ -186,6 +198,8 @@ jobs:
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
           ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          LOG_FILE: ${{ github.workspace }}/logs/triage_${{ github.event.issue.number }}.log
+          LOG_LEVEL: DEBUG
           ENABLE_ARXIV_MCP: true
           ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
@@ -216,6 +230,8 @@ jobs:
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
           ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          LOG_FILE: ${{ github.workspace }}/logs/review_${{ github.event.issue.number }}.log
+          LOG_LEVEL: DEBUG
           ENABLE_ARXIV_MCP: true
           ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
@@ -235,7 +251,19 @@ jobs:
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
           ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          LOG_FILE: ${{ github.workspace }}/logs/summarize_${{ github.event.issue.number }}.log
+          LOG_LEVEL: DEBUG
           ENABLE_ARXIV_MCP: true
           ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
+
+      # 上传日志文件
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orchestrator-logs-${{ github.event.issue.number }}-${{ github.run_id }}
+          path: logs/
+          retention-days: 7
+          if-no-files-found: ignore

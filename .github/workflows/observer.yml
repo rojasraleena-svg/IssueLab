@@ -75,6 +75,17 @@ jobs:
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
           ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          LOG_FILE: ${{ github.workspace }}/logs/observer_${{ github.run_id }}.log
+          LOG_LEVEL: DEBUG
           ENABLE_ARXIV_MCP: true  # 已修复 MCP 超时问题
           ENABLE_GITHUB_MCP: false  # 暂时关闭以测试性能
-          LOG_LEVEL: INFO
+
+      # 上传日志文件
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: observer-logs-${{ github.run_id }}
+          path: logs/
+          retention-days: 7
+          if-no-files-found: ignore

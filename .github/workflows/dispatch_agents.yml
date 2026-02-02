@@ -54,10 +54,6 @@ jobs:
       - name: Dispatch to user repositories
         id: dispatch
         continue-on-error: true  # 允许部分失败
-        env:
-          PYTHONPATH: ${{ github.workspace }}/src
-          GITHUB_APP_ID: ${{ secrets.ISSUELAB_APP_ID }}
-          GITHUB_APP_PRIVATE_KEY: ${{ secrets.ISSUELAB_APP_PRIVATE_KEY }}
         run: |
           # 使用单引号包裹 JSON 以避免 bash 解析问题
           mentions='${{ steps.parse_issue.outputs.mentions || steps.parse_comment.outputs.mentions }}'
@@ -78,6 +74,22 @@ jobs:
             ${{ github.event_name == 'issue_comment' && format('--comment-body "{0}"', github.event.comment.body) || '' }} \
             --labels '${{ steps.labels.outputs.labels }}' \
             --use-github-app
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+          GITHUB_APP_ID: ${{ secrets.ISSUELAB_APP_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.ISSUELAB_APP_PRIVATE_KEY }}
+          LOG_FILE: ${{ github.workspace }}/logs/dispatch_${{ github.event.issue.number }}.log
+          LOG_LEVEL: DEBUG
+
+      # 上传日志文件
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dispatch-logs-${{ github.event.issue.number }}-${{ github.run_id }}
+          path: logs/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Report dispatch results
         if: always() && steps.dispatch.outcome != 'skipped'
