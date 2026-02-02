@@ -197,16 +197,26 @@ def create_agent_options() -> ClaudeAgentOptions:
 
     # 动态获取所有 Agent（排除 observer，它不能自己触发自己）
     agents = discover_agents()
-    arxiv_tools = ["search_papers", "download_paper", "read_paper", "list_papers"]
-    # GitHub 工具 - 用于搜索开源实现、查看代码仓库
-    github_tools = [
-        "search_repositories",  # 搜索仓库
-        "get_file_contents",  # 读取文件
-        "list_commits",  # 查看提交历史
-        "search_code",  # 搜索代码
-        "get_issue",  # 获取 Issue
-    ]
-    all_tools = ["Read", "Write", "Bash"] + arxiv_tools + github_tools
+
+    # 根据环境变量决定是否启用 MCP 工具
+    base_tools = ["Read", "Write", "Bash"]
+
+    arxiv_tools = []
+    if os.environ.get("ENABLE_ARXIV_MCP", "true").lower() == "true":
+        arxiv_tools = ["search_papers", "download_paper", "read_paper", "list_papers"]
+
+    github_tools = []
+    if os.environ.get("ENABLE_GITHUB_MCP", "true").lower() == "true":
+        # GitHub 工具 - 用于搜索开源实现、查看代码仓库
+        github_tools = [
+            "search_repositories",  # 搜索仓库
+            "get_file_contents",  # 读取文件
+            "list_commits",  # 查看提交历史
+            "search_code",  # 搜索代码
+            "get_issue",  # 获取 Issue
+        ]
+
+    all_tools = base_tools + arxiv_tools + github_tools
 
     agent_definitions = {}
     for name, config in agents.items():
