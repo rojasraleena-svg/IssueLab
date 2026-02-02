@@ -1,0 +1,19 @@
+[project]
+name = "issuelab"
+version = "0.1.0"
+description = "AI 辅助科研评审系统"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/issuelab"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
