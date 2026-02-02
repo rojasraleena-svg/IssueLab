@@ -46,7 +46,8 @@ jobs:
       - name: Get labels
         id: labels
         run: |
-          labels='${{ toJson(github.event.issue.labels.*.name) }}'
+          # 将 JSON 转换为单行格式
+          labels=$(echo '${{ toJson(github.event.issue.labels.*.name) }}' | tr -d '\n' | tr -d ' ')
           echo "labels=$labels" >> $GITHUB_OUTPUT
 
       - name: Dispatch to user repositories
