@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Install arxiv-mcp-server
+        run: uv tool install arxiv-mcp-server
+
       - name: Get Issue content
         id: get_issue
         run: |
@@ -98,6 +101,8 @@ jobs:
           ANTHROPIC_AUTH_KEY: ${{ secrets.ANTHROPIC_AUTH_KEY }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          ENABLE_ARXIV_MCP: true
 
   # ========== @mention 触发（并行执行） ==========
   process-mention:
@@ -117,6 +122,9 @@ jobs:
 
       - name: Install dependencies
         run: uv sync
+
+      - name: Install arxiv-mcp-server
+        run: uv tool install arxiv-mcp-server
 
       - name: Parse @mentions
         id: parse
@@ -177,6 +185,10 @@ jobs:
           ANTHROPIC_AUTH_KEY: ${{ secrets.ANTHROPIC_AUTH_KEY }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          ENABLE_ARXIV_MCP: true
+          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          ENABLE_ARXIV_MCP: true
 
   # ========== /command 触发（顺序执行） ==========
   process-command:
@@ -200,6 +212,9 @@ jobs:
 
       - name: Install dependencies
         run: uv sync
+
+      - name: Install arxiv-mcp-server
+        run: uv tool install arxiv-mcp-server
 
       - name: Extract command
         id: extract
@@ -275,6 +290,10 @@ jobs:
           ANTHROPIC_AUTH_KEY: ${{ secrets.ANTHROPIC_AUTH_KEY }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          ENABLE_ARXIV_MCP: true
+          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          ENABLE_ARXIV_MCP: true
 
       # 处理 /review 命令：运行完整评审流程
       - name: Run review process
@@ -304,6 +323,8 @@ jobs:
           ANTHROPIC_AUTH_KEY: ${{ secrets.ANTHROPIC_AUTH_KEY }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          ENABLE_ARXIV_MCP: true
 
       # 处理 /summarize 命令
       - name: Run summarizer
@@ -322,3 +343,5 @@ jobs:
           ANTHROPIC_AUTH_KEY: ${{ secrets.ANTHROPIC_AUTH_KEY }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
+          ENABLE_ARXIV_MCP: true

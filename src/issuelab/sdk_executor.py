@@ -44,35 +44,60 @@ def create_agent_options() -> ClaudeAgentOptions:
     if model:
         env["ANTHROPIC_MODEL"] = model
 
+    # arxiv MCP 存储路径
+    arxiv_storage_path = os.environ.get("ARXIV_STORAGE_PATH", str(Path.home() / ".arxiv-mcp-server" / "papers"))
+
+    # MCP 服务器配置
+    mcp_servers = []
+    if os.environ.get("ENABLE_ARXIV_MCP", "true").lower() == "true":
+        mcp_servers.append({
+            "name": "arxiv-mcp-server",
+            "command": "uv",
+            "args": [
+                "--directory",
+                str(Path(__file__).parent.parent.parent),
+                "tool",
+                "run",
+                "arxiv-mcp-server",
+                "--storage-path",
+                arxiv_storage_path,
+            ],
+            "env": env.copy(),
+        })
+
+    # 定义评审代理使用的 arxiv 工具列表
+    arxiv_tools = ["search_papers", "download_paper", "read_paper", "list_papers"]
+
     return ClaudeAgentOptions(
         agents={
             "moderator": AgentDefinition(
                 description="分诊与控场代理",
                 prompt=load_prompt("moderator"),
-                tools=["Read", "Write", "Bash"],
+                tools=["Read", "Write", "Bash"] + arxiv_tools,
                 model=model,
             ),
             "reviewer_a": AgentDefinition(
                 description="正方评审代理",
                 prompt=load_prompt("reviewer_a"),
-                tools=["Read", "Write", "Bash"],
+                tools=["Read", "Write", "Bash"] + arxiv_tools,
                 model=model,
             ),
             "reviewer_b": AgentDefinition(
                 description="反方评审代理",
                 prompt=load_prompt("reviewer_b"),
-                tools=["Read", "Write", "Bash"],
+                tools=["Read", "Write", "Bash"] + arxiv_tools,
                 model=model,
             ),
             "summarizer": AgentDefinition(
                 description="共识汇总代理",
                 prompt=load_prompt("summarizer"),
-                tools=["Read", "Write"],
+                tools=["Read", "Write"] + arxiv_tools,
                 model=model,
             ),
         },
         setting_sources=["user", "project"],
         env=env,
+        mcp_servers=mcp_servers,
     )
 
 
