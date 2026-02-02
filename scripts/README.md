@@ -102,3 +102,20 @@ if __name__ == "__main__":
 - **CLI 模块实现**: `src/issuelab/cli/`
 - **Lightweight workflow**: `.github/workflows/dispatch_agents.yml`
 - **Full-featured workflow**: `.github/workflows/orchestrator.yml`
+
+## 🔑 配置要求
+
+### PAT_TOKEN Secret
+
+`dispatch_to_users.py` 需要 **Personal Access Token** 来触发跨仓库的 workflow：
+
+1. 创建 PAT：https://github.com/settings/tokens (选择 "classic")
+   - 权限：`repo` + `workflow`
+2. 添加到仓库：https://github.com/gqy20/IssueLab/settings/secrets/actions
+   - 名称：`PAT_TOKEN`
+   - 值：粘贴你的 token
+
+⚠️ **为什么不能用 `GITHUB_TOKEN`？**
+
+GitHub 的 `GITHUB_TOKEN` 有安全限制，无法触发其他仓库（包括 fork）的 workflow。
+使用 PAT 可以突破这个限制，实现真正的跨仓库 dispatch。
