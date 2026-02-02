@@ -9,10 +9,12 @@ import json
 import os
 import sys
 import time
+from datetime import UTC, datetime, timedelta
 from functools import wraps
 from pathlib import Path
 from typing import Any
 
+import jwt
 import requests
 import yaml
 
@@ -147,6 +149,116 @@ def retry_on_failure(max_attempts: int = 3, delay: float = 2, backoff: float = 2
         return wrapper
 
     return decorator
+
+
+def generate_github_app_jwt(app_id: str, private_key: str) -> str:
+    """
+    生成 GitHub App JWT token
+
+    Args:
+        app_id: GitHub App ID
+        private_key: GitHub App Private Key (PEM format)
+
+    Returns:
+        JWT token string
+    """
+    now = datetime.now(UTC)
+    payload = {
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=10)).timestamp()),
+        "iss": app_id,
+    }
+
+    return jwt.encode(payload, private_key, algorithm="RS256")
+
+
+def get_installation_id(owner: str, repo: str, app_jwt: str) -> int | None:
+    """
+    获取指定仓库的 Installation ID
+
+    Args:
+        owner: 仓库 owner
+        repo: 仓库名称
+        app_jwt: GitHub App JWT token
+
+    Returns:
+        Installation ID，如果未找到则返回 None
+    """
+    url = f"https://api.github.com/repos/{owner}/{repo}/installation"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {app_jwt}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("id")
+    except requests.exceptions.HTTPError as e:
+        if response.status_code == 404:
+            print(f"⚠️ No installation found for {owner}/{repo}", file=sys.stderr)
+        else:
+            print(f"⚠️ Failed to get installation: {e}", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"⚠️ Error getting installation: {e}", file=sys.stderr)
+        return None
+
+
+def generate_installation_token(installation_id: int, app_jwt: str) -> str | None:
+    """
+    为指定 Installation 生成 Access Token
+
+    Args:
+        installation_id: Installation ID
+        app_jwt: GitHub App JWT token
+
+    Returns:
+        Installation Access Token，失败返回 None
+    """
+    url = f"https://api.github.com/app/installations/{installation_id}/access_tokens"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {app_jwt}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    try:
+        response = requests.post(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        return data.get("token")
+    except Exception as e:
+        print(f"⚠️ Failed to generate installation token: {e}", file=sys.stderr)
+        return None
+
+
+def get_token_for_repository(repository: str, app_id: str, private_key: str) -> str | None:
+    """
+    为指定仓库获取 GitHub App Installation Token
+
+    Args:
+        repository: 仓库全名 (owner/repo)
+        app_id: GitHub App ID
+        private_key: GitHub App Private Key
+
+    Returns:
+        Installation Access Token，失败返回 None
+    """
+    owner, repo = repository.split("/")
+
+    # 1. 生成 App JWT
+    app_jwt = generate_github_app_jwt(app_id, private_key)
+
+    # 2. 获取 Installation ID
+    installation_id = get_installation_id(owner, repo, app_jwt)
+    if not installation_id:
+        return None
+
+    # 3. 生成 Installation Token
+    return generate_installation_token(installation_id, app_jwt)
 
 
 @retry_on_failure(max_attempts=3, delay=2)
@@ -337,14 +449,34 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Dry run mode - validate configuration without actually dispatching",
     )
+    parser.add_argument("--use-github-app", action="store_true", help="Use GitHub App authentication")
+    parser.add_argument("--app-id", help="GitHub App ID (required if --use-github-app)")
+    parser.add_argument("--app-private-key", help="GitHub App Private Key (required if --use-github-app)")
 
     args = parser.parse_args(argv)
 
-    # 读取 GitHub Token
-    token = os.environ.get("GITHUB_TOKEN")
-    if not token:
-        print("Error: GITHUB_TOKEN environment variable not set", file=sys.stderr)
-        return 1
+    # 检查认证方式
+    use_github_app = args.use_github_app or os.environ.get("GITHUB_APP_AUTH") == "true"
+
+    if use_github_app:
+        # GitHub App 认证模式
+        app_id = args.app_id or os.environ.get("GITHUB_APP_ID")
+        app_private_key = args.app_private_key or os.environ.get("GITHUB_APP_PRIVATE_KEY")
+
+        if not app_id or not app_private_key:
+            print("Error: GitHub App authentication requires GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY", file=sys.stderr)
+            return 1
+
+        print("🔑 Using GitHub App authentication")
+        github_app_credentials = (app_id, app_private_key)
+        default_token = None
+    else:
+        # Token 认证模式（向后兼容）
+        default_token = os.environ.get("GITHUB_TOKEN")
+        if not default_token:
+            print("Error: GITHUB_TOKEN environment variable not set", file=sys.stderr)
+            return 1
+        github_app_credentials = None
 
     # 解析 mentions（支持 JSON 和 CSV 格式）
     mentions_str = args.mentions.strip()
@@ -437,6 +569,21 @@ def main(argv: list[str] | None = None) -> int:
         # 根据模式选择 dispatch 方式
         success = False
         error_code = ""
+
+        # 获取目标仓库的 token
+        if github_app_credentials:
+            # GitHub App 模式：为每个目标仓库动态生成 token
+            app_id, private_key = github_app_credentials
+            token = get_token_for_repository(repository, app_id, private_key)
+            if not token:
+                print(f"⚠️ Failed to get token for {repository}", file=sys.stderr)
+                failed_agents.append(
+                    {"username": username, "repository": repository, "error": "TOKEN_GENERATION_FAILED"}
+                )
+                continue
+        else:
+            # 传统 token 模式
+            token = default_token
 
         if dispatch_mode == "workflow_dispatch":
             # 使用 workflow_dispatch（推荐用于 fork 仓库）
