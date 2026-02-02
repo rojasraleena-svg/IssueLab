@@ -10,7 +10,31 @@ on:
       issue_number:
         description: 'Issue number'
         required: true
-        type: number
+        type: string
+      issue_title:
+        description: 'Issue title'
+        required: false
+        type: string
+      issue_body:
+        description: 'Issue body'
+        required: false
+        type: string
+      comment_id:
+        description: 'Comment ID'
+        required: false
+        type: string
+      comment_body:
+        description: 'Comment body'
+        required: false
+        type: string
+      labels:
+        description: 'Issue labels (JSON array)'
+        required: false
+        type: string
+      target_username:
+        description: 'Target agent username'
+        required: false
+        type: string
 
 permissions:
   contents: read
