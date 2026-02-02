@@ -136,7 +136,29 @@ def main():
         comments = ""
 
     if args.command == "execute":
-        agents = args.agents.split()
+        # 支持 JSON 数组格式 ["agent1", "agent2"] 或空格分隔格式 "agent1 agent2"
+        import json
+
+        agents_str = args.agents.strip()
+        if agents_str.startswith("[") and agents_str.endswith("]"):
+            # JSON 数组格式
+            try:
+                agents = json.loads(agents_str)
+                # 转为小写
+                agents = [agent.lower() for agent in agents]
+            except json.JSONDecodeError:
+                print(f"Error: Invalid JSON format for agents: {agents_str}")
+                return 1
+        else:
+            # 空格分隔格式
+            agents = agents_str.split()
+
+        print(f"执行 agents: {agents}")
+
+        # 设置日志文件
+        log_file = f"/tmp/issuelab_execute_{args.issue}.log"
+        print(f"详细日志将保存到: {log_file}")
+
         results = asyncio.run(run_agents_parallel(args.issue, agents, context, comment_count))
 
         # 输出结果
