@@ -19,12 +19,12 @@ class Config:
     @staticmethod
     def get_anthropic_base_url() -> str:
         """获取 Anthropic API Base URL"""
-        return os.environ.get("ANTHROPIC_BASE_URL", "")
+        return os.environ.get("ANTHROPIC_BASE_URL", "https://api.minimaxi.com/anthropic")
 
     @staticmethod
     def get_anthropic_model() -> str:
         """获取 Anthropic Model"""
-        return os.environ.get("ANTHROPIC_MODEL", "sonnet")
+        return os.environ.get("ANTHROPIC_MODEL", "MiniMax-M2.1")
 
     @staticmethod
     def get_anthropic_env() -> dict:
