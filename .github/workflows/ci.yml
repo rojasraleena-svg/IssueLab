@@ -38,16 +38,32 @@ jobs:
 
       - name: Check coverage threshold
         run: |
-          COVERAGE=$(uv run pytest tests/ --cov=issuelab --cov-report=term-missing | grep "TOTAL" | awk '{print $4}' | sed 's/%//')
-          echo "当前覆盖率: ${COVERAGE}%"
+          uv run python - << 'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
 
-          THRESHOLD=40
-          if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
-            echo "❌ 测试覆盖率 ${COVERAGE}% 低于阈值 ${THRESHOLD}%"
-            exit 1
-          else
-            echo "✅ 测试覆盖率 ${COVERAGE}% 达标"
-          fi
+          coverage_xml = Path("coverage.xml")
+          if not coverage_xml.exists():
+              print("❌ 未找到 coverage.xml（pytest-cov 未生成覆盖率报告）")
+              sys.exit(1)
+
+          root = ET.parse(coverage_xml).getroot()
+          line_rate = root.attrib.get("line-rate")
+          if line_rate is None:
+              print("❌ coverage.xml 缺少 line-rate 字段，无法计算覆盖率")
+              sys.exit(1)
+
+          coverage = float(line_rate) * 100
+          threshold = 40
+
+          print(f"当前覆盖率: {coverage:.2f}%")
+          if coverage < threshold:
+              print(f"❌ 测试覆盖率 {coverage:.2f}% 低于阈值 {threshold}%")
+              sys.exit(1)
+
+          print(f"✅ 测试覆盖率 {coverage:.2f}% 达标")
+          PY
 
   lint:
     runs-on: ubuntu-latest
