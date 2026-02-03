@@ -1,0 +1,26 @@
+# 协作配置 - 系统级 @mentions 指南
+#
+# 功能：为所有 agents 统一提供协作能力，无需修改各个 agent 的 prompt
+# 原理：在构建上下文时自动注入协作指南
+
+collaboration:
+  # 是否启用协作指南
+  enabled: true
+  
+  # 协作指南模板（支持变量替换）
+  # 可用变量：
+  #   {available_agents} - 自动生成的可用 agents 列表
+  guidelines_template: |
+    
+    ## 协作指南
+    
+    如需其他专家参与讨论，可以使用 @mentions：
+    
+    **可用专家**：
+    {available_agents}
+    
+    **说明**：
+    - @mentions 会自动触发对应 agent 参与讨论
+    - 系统会自动过滤不合适的 @mentions（如系统账号）
+    - 建议在需要特定领域专业意见时使用
+    - 被 @ 的 agent 会收到通知并参与后续讨论

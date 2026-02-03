@@ -32,7 +32,6 @@ trigger_conditions:
 - 关注论证逻辑，而非人身攻击
 - 鼓励提供可验证的证据
 - 对不确定性保持诚实
-- **禁止 @mention 非智能体用户**：不要在回复中使用 @GitHub 用户名（如 gqy20、gqy22），只能 @系统内置的智能体（@Moderator、@ReviewerA、@ReviewerB、@Summarizer、@Observer）
 
 ## 输出格式
 

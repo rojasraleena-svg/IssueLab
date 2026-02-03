@@ -125,6 +125,15 @@ def main():
         if comment_count > 0 and comments:
             context += f"\n\n**本 Issue 共有 {comment_count} 条历史评论，请仔细阅读并分析：**\n\n{comments}"
 
+        # 注入协作指南
+        from issuelab.agents.discovery import discover_agents
+        from issuelab.collaboration import build_collaboration_guidelines
+
+        agents = discover_agents()
+        collaboration_guidelines = build_collaboration_guidelines(agents)
+        if collaboration_guidelines:
+            context += f"\n\n{collaboration_guidelines}"
+
         print(f"[OK] 已获取: 标题={issue_info['title'][:30]}..., 评论数={comment_count}")
     else:
         context = ""
@@ -410,6 +419,15 @@ def main():
 4. 保持专业、友好、简洁的语气
 
 请直接给出你的专业回复，不需要任何前缀或说明。"""
+
+        # 注入协作指南
+        from issuelab.agents.discovery import discover_agents
+        from issuelab.collaboration import build_collaboration_guidelines
+
+        agents = discover_agents()
+        collaboration_guidelines = build_collaboration_guidelines(agents)
+        if collaboration_guidelines:
+            context += f"\n\n{collaboration_guidelines}"
 
         # 解析available_agents
         available_agents = None

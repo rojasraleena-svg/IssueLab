@@ -17,17 +17,6 @@ trigger_conditions:
 
 __AGENT_MATRIX__
 
-## 触发规则
-
-根据 Issue 分析结果选择合适的 Agent：
-
-| Issue 类型 | 特征 | 触发 Agent | 触发评论 |
-|-----------|------|-----------|---------|
-| **新论文** | 包含 arXiv 链接、论文模板 | moderator | `@Moderator 请审核` |
-| **技术问题** | 包含问题描述、求助 | reviewer_a | `@ReviewerA 分析` |
-| **实验复现** | 包含实验步骤、结果 | reviewer_a + reviewer_b | `@ReviewerA @ReviewerB 评审` |
-| **讨论较多** | 评论数 > 3，需要总结 | summarizer | `@Summarizer 汇总` |
-| **需要全面评审** | 明确要求评审 | moderator + reviewer_a + reviewer_b | `@Moderator @ReviewerA @ReviewerB 评审` |
 
 ## 决策逻辑
 
