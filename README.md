@@ -20,18 +20,30 @@
 
 ## 使用方式
 
-### @Mention 并行触发（推荐）
+### @Mention 触发
 
+**内置 Agent**（在主仓库执行）：
 ```markdown
-请 @Moderator 分诊，@ReviewerA 评审，@ReviewerB 找问题
+@Moderator 分诊
+@ReviewerA 评审可行性
+@ReviewerB 找问题
+@Summarizer 汇总共识
 ```
 
-### /Command 顺序触发
+**别名支持**：`@mod`、`@reviewer`/`@reviewera`、`@reviewerb`/`@revb`、`@summary`
+
+**注册用户**（通过 Plan B dispatch 到用户 fork）：
+```markdown
+@alice 请评审我的论文
+```
+
+### /Command 触发
 
 ```markdown
 /review      # 完整评审流程
 /summarize   # 汇总共识
 /triage      # 仅 Moderator 分诊
+/echo        # 快速测试
 /quiet       # 机器人静默
 ```
 

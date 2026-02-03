@@ -46,13 +46,14 @@ uv run python -m issuelab list-agents
 
 | File | Purpose |
 |------|---------|
-| `src/issuelab/__main__.py` | CLI entry point with truncate_text(), post_comment() |
+| `src/issuelab/__main__.py` | CLI entry point - `execute`, `review`, `observe`, `observe-batch`, `list-agents` |
 | `src/issuelab/sdk_executor.py` | Agent execution engine - `create_agent_options()`, `AgentConfig`, `SCENE_CONFIGS`, `run_agents_parallel()` |
-| `src/issuelab/config.py` | Environment variable management |
+| `src/issuelab/config.py` | Environment variable management - `Config.get_anthropic_api_key()`, `Config.get_github_token()` |
 | `src/issuelab/parser.py` | @mention parsing with alias mapping |
-| `src/issuelab/agents/__init__.py` | Agent discovery and loading from `prompts/` |
+| `src/issuelab/agents/__init__.py` | Agent discovery and loading from `prompts/` and `agents/` |
 | `src/issuelab/cli/dispatch.py` | Cross-repository event dispatch (Plan B) |
 | `src/issuelab/tools/github.py` | GitHub API wrappers using `gh` CLI |
+| `src/issuelab/retry.py` | Retry mechanism - `retry_async()`, `retry_sync()` |
 
 ### Directory Structure
 
@@ -94,22 +95,24 @@ trigger_conditions:
 - `observer` - Analyzes issues, decides agent triggering
 - `echo` / `test` - Testing agents
 
+**User Custom Agents:** Users can fork the repo and add their own agents in `agents/<username>/` directory with `prompt.md`. These are registered in `agents/_registry/*.yml` for cross-repository triggering.
+
 **Agent Aliases:** `mod`, `reviewer`/`reviewera`, `reviewerb`/`revb`, `summarizer`/`summary`
 
 ### Trigger Mechanisms
 
-1. **CLI Commands** (primary):
-   - `execute` - Run specified agents in parallel
-   - `review` - Sequential flow: moderator -> reviewer_a -> reviewer_b -> summarizer
-   - `observe` - Observer analyzes single issue
-   - `observe-batch` - Observer analyzes multiple issues
+1. **@Mention** (via orchestrator.yml):
+   - **内置 Agent** (`@Moderator`, `@ReviewerA`, `@ReviewerB`, `@Summarizer`, `@Observer`): 在主仓库执行
+   - **注册用户** (`@alice`): 通过 `dispatch_agents.yml` dispatch 到用户 fork
+   - **支持别名**: `@mod` → moderator, `@reviewer`/`@reviewera` → reviewer_a, `@reviewerb`/`@revb` → reviewer_b, `@summary` → summarizer
 
-2. **@Mention** (via GitHub Actions):
-   ```markdown
-   @Moderator @ReviewerA @ReviewerB
-   ```
+2. **/Command** (via orchestrator.yml):
+   - `/review` - Sequential flow: moderator -> reviewer_a -> reviewer_b -> summarizer
+   - `/triage` - Run only moderator
+   - `/summarize` - Run only summarizer
+   - `/echo` - Quick test with echo agent
 
-3. **Label** (via GitHub Actions):
+3. **Label**:
    - Add `state:ready-for-review` to trigger full review
 
 ### MCP Integrations
@@ -131,16 +134,25 @@ trigger_conditions:
 | `ANTHROPIC_API_KEY` | Anthropic API | Yes |
 | `GITHUB_TOKEN` / `GH_TOKEN` | GitHub authentication | Yes |
 | `ANTHROPIC_MODEL` | Model name | No (default: sonnet) |
+| `ANTHROPIC_BASE_URL` | API base URL (for proxies) | No |
 | `ARXIV_STORAGE_PATH` | arXiv paper storage | No |
 | `ENABLE_ARXIV_MCP` | Enable arXiv MCP | No (default: true) |
 | `ENABLE_GITHUB_MCP` | Enable GitHub MCP | No (default: true) |
+| `LOG_LEVEL` | Logging level | No (default: INFO) |
+| `LOG_FILE` | Log file path | No |
 
 ### Distributed Execution (Plan B)
 
 Cross-repository agent execution via GitHub App:
-- Registry: `agents/_registry/*.yml` maps users to their forks
-- Dispatch modes: `repository_dispatch` or `workflow_dispatch`
-- Tokens: GitHub App Installation Token generated per repository
+- **Registry:** `agents/_registry/*.yml` maps users to their forks
+- **Dispatch modes:** `repository_dispatch` or `workflow_dispatch`
+- **Tokens:** GitHub App Installation Token generated per repository
+- **DISPATCH_TOKEN:** Fine-grained PAT in main repo for triggering user forks
+
+**User fork requirements:**
+- `ANTHROPIC_API_KEY` - User's Claude API key in fork secrets
+- `.github/workflows/user_agent.yml` - Receives dispatch events
+- `agents/<username>/prompt.md` - Custom agent prompt
 
 ### Timeout Control
 
