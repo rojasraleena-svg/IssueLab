@@ -55,7 +55,6 @@ async def run_single_agent(prompt: str, agent_name: str) -> dict:
         response_text = []
         turn_count = 0
         tool_calls = []
-        local_id = ""
         first_result = True
 
         async for message in query(prompt=prompt, options=options):

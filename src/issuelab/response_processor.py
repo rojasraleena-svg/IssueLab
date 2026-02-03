@@ -119,10 +119,7 @@ def process_agent_response(
         }
     """
     # 提取response文本
-    if isinstance(response, dict):
-        response_text = response.get("response", str(response))
-    else:
-        response_text = str(response)
+    response_text = response.get("response", str(response)) if isinstance(response, dict) else str(response)
 
     # 解析@mentions
     mentions = extract_mentions(response_text)

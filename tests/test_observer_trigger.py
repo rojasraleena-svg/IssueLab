@@ -9,9 +9,7 @@ TDD 测试用例：
 """
 
 import subprocess
-from unittest.mock import MagicMock, Mock, call, patch
-
-import pytest
+from unittest.mock import Mock, patch
 
 
 class TestBuiltinAgentDetection:

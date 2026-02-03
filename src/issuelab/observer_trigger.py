@@ -11,7 +11,6 @@ Observer 自动触发功能
 import logging
 import subprocess
 import sys
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +54,7 @@ def trigger_builtin_agent(agent_name: str, issue_number: int) -> bool:
         False: 触发失败
     """
     try:
-        result = subprocess.run(
+        subprocess.run(
             [
                 "gh", "workflow", "run", "agent.yml",
                 "-f", f"agent={agent_name.lower()}",

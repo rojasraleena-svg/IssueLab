@@ -103,10 +103,7 @@ def analyze_issue_interest(
     interested = interest_score > 0
 
     reason = ""
-    if interested:
-        reason = f"匹配到关键词: {', '.join(matched_keywords)}"
-    else:
-        reason = "未匹配到感兴趣的关键词"
+    reason = f"匹配到关键词: {', '.join(matched_keywords)}" if interested else "未匹配到感兴趣的关键词"
 
     return {"interested": interested, "reason": reason, "priority": min(interest_score, 10)}
 

@@ -1,9 +1,11 @@
 """测试 SDK 执行器"""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from issuelab.agents.options import create_agent_options
+
 from issuelab.agents.discovery import discover_agents, load_prompt
+from issuelab.agents.options import create_agent_options
 from issuelab.agents.parsers import parse_observer_response
 
 
@@ -135,9 +137,10 @@ class TestStreamingOutput:
     @pytest.mark.asyncio
     async def test_text_block_outputs_to_console_and_log(self):
         """TextBlock 应该输出到终端和日志"""
-        from issuelab.agents.executor import run_single_agent
         from claude_agent_sdk import AssistantMessage, ResultMessage
         from claude_agent_sdk.types import TextBlock
+
+        from issuelab.agents.executor import run_single_agent
 
         text_responses = ["Hello ", "World"]
 
@@ -155,18 +158,18 @@ class TestStreamingOutput:
             result.session_id = "test-session"
             yield result
 
-        with patch("issuelab.agents.executor.query", mock_query):
-            with patch("builtins.print") as mock_print:
-                result = await run_single_agent("test prompt", "test_agent")
-                # 验证 print 被调用（流式输出）
-                assert mock_print.call_count >= len(text_responses)
+        with patch("issuelab.agents.executor.query", mock_query), patch("builtins.print") as mock_print:
+            await run_single_agent("test prompt", "test_agent")
+            # 验证 print 被调用（流式输出）
+            assert mock_print.call_count >= len(text_responses)
 
     @pytest.mark.asyncio
     async def test_tool_use_block_outputs_to_console_and_log(self):
         """ToolUseBlock 应该输出到终端和日志"""
-        from issuelab.agents.executor import run_single_agent
         from claude_agent_sdk import AssistantMessage, ResultMessage
         from claude_agent_sdk.types import ToolUseBlock
+
+        from issuelab.agents.executor import run_single_agent
 
         async def mock_query(*args, **kwargs):
             # 模拟 ToolUseBlock
@@ -184,18 +187,18 @@ class TestStreamingOutput:
             result.session_id = "test-session"
             yield result
 
-        with patch("issuelab.agents.executor.query", mock_query):
-            with patch("builtins.print") as mock_print:
-                result = await run_single_agent("test prompt", "test_agent")
-                # 验证工具名被输出
-                assert any("Read" in str(call) for call in mock_print.call_args_list)
+        with patch("issuelab.agents.executor.query", mock_query), patch("builtins.print") as mock_print:
+            await run_single_agent("test prompt", "test_agent")
+            # 验证工具名被输出
+            assert any("Read" in str(call) for call in mock_print.call_args_list)
 
     @pytest.mark.asyncio
     async def test_thinking_block_is_skipped(self):
         """ThinkingBlock 应该被跳过，不输出"""
-        from issuelab.agents.executor import run_single_agent
         from claude_agent_sdk import AssistantMessage, ResultMessage
         from claude_agent_sdk.types import ThinkingBlock
+
+        from issuelab.agents.executor import run_single_agent
 
         async def mock_query(*args, **kwargs):
             # 模拟 ThinkingBlock
@@ -213,18 +216,18 @@ class TestStreamingOutput:
             result.session_id = "test-session"
             yield result
 
-        with patch("issuelab.agents.executor.query", mock_query):
-            with patch("builtins.print") as mock_print:
-                result = await run_single_agent("test prompt", "test_agent")
-                # 验证 Thinking 内容没有被输出
-                assert not any("This is private thinking" in str(call) for call in mock_print.call_args_list)
+        with patch("issuelab.agents.executor.query", mock_query), patch("builtins.print") as mock_print:
+            await run_single_agent("test prompt", "test_agent")
+            # 验证 Thinking 内容没有被输出
+            assert not any("This is private thinking" in str(call) for call in mock_print.call_args_list)
 
     @pytest.mark.asyncio
     async def test_tool_result_block_logs_only(self):
         """ToolResultBlock 应该只记录日志，不输出到终端"""
-        from issuelab.agents.executor import run_single_agent
         from claude_agent_sdk import AssistantMessage, ResultMessage
         from claude_agent_sdk.types import ToolResultBlock
+
+        from issuelab.agents.executor import run_single_agent
 
         async def mock_query(*args, **kwargs):
             # 模拟 ToolResultBlock
@@ -243,8 +246,7 @@ class TestStreamingOutput:
             result.session_id = "test-session"
             yield result
 
-        with patch("issuelab.agents.executor.query", mock_query):
-            with patch("builtins.print") as mock_print:
-                result = await run_single_agent("test prompt", "test_agent")
-                # 验证工具结果内容没有被完整输出（避免刷屏）
-                assert not any("Very long result" in str(call) for call in mock_print.call_args_list)
+        with patch("issuelab.agents.executor.query", mock_query), patch("builtins.print") as mock_print:
+            await run_single_agent("test prompt", "test_agent")
+            # 验证工具结果内容没有被完整输出（避免刷屏）
+            assert not any("Very long result" in str(call) for call in mock_print.call_args_list)

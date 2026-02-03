@@ -5,11 +5,11 @@ import asyncio
 import json
 import subprocess
 
-from issuelab.config import Config
-from issuelab.logging_config import get_logger, setup_logging
 from issuelab.agents.discovery import discover_agents, get_agent_matrix_markdown
 from issuelab.agents.executor import run_agents_parallel
 from issuelab.agents.observer import run_observer
+from issuelab.config import Config
+from issuelab.logging_config import get_logger, setup_logging
 from issuelab.tools.github import get_issue_info, post_comment
 
 # 初始化日志
@@ -365,6 +365,7 @@ def main():
     elif args.command == "personal-reply":
         # 个人Agent回复主仓库issue
         import os
+
         import yaml
 
         # 读取agent配置
@@ -380,7 +381,7 @@ def main():
         if args.issue_title and args.issue_body:
             issue_title = args.issue_title
             issue_body = args.issue_body
-            print(f"使用传入的Issue信息")
+            print("使用传入的Issue信息")
         else:
             try:
                 result = subprocess.run(
@@ -392,7 +393,7 @@ def main():
                 issue_data = json.loads(result.stdout)
                 issue_title = issue_data.get("title", "")
                 issue_body = issue_data.get("body", "")
-                print(f"从主仓库获取Issue信息")
+                print("从主仓库获取Issue信息")
             except Exception as e:
                 print(f"[ERROR] 获取issue信息失败: {e}")
                 return 1
@@ -480,7 +481,7 @@ def main():
                         # 转义换行符
                         escaped_response = response.replace("\n", "%0A").replace("\r", "%0D")
                         f.write(f"agent_response={escaped_response}\n")
-                        f.write(f"comment_failed=true\n")
+                        f.write("comment_failed=true\n")
                     print("[INFO] 结果已保存到 GITHUB_OUTPUT，workflow可以处理")
 
                 return 1
