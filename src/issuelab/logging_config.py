@@ -33,7 +33,7 @@ def setup_logging(
 
     # 控制台处理器
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.DEBUG)  # 改为 DEBUG 级别以显示完整日志
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
 

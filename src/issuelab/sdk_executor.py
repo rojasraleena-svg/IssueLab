@@ -100,6 +100,18 @@ def _create_agent_options_impl(
 
     arxiv_storage_path = Config.get_arxiv_storage_path()
 
+    # 收集 SDK 内部日志的回调
+    sdk_logs: list[str] = []
+
+    def sdk_stderr_handler(message: str) -> None:
+        """捕获 SDK 内部日志（包含详细的模型交互信息）"""
+        log_entry = f"[SDK] {message}"
+        sdk_logs.append(log_entry)
+        # 输出到终端
+        print(message, end="", flush=True)
+        # 记录到日志
+        logger.debug(f"[SDK] {message}")
+
     mcp_servers = []
     if Config.is_arxiv_mcp_enabled():
         mcp_servers.append(
@@ -160,6 +172,7 @@ def _create_agent_options_impl(
         setting_sources=["user", "project"],
         env=env,
         mcp_servers=mcp_servers,
+        stderr=sdk_stderr_handler,  # 捕获 SDK 内部详细日志
     )
 
 
@@ -432,30 +445,45 @@ async def run_single_agent(prompt: str, agent_name: str) -> dict:
                         # 日志记录（INFO 级别）
                         logger.info(f"[{agent_name}] [Text] {text[:100]}...")
 
-                    # 思考块 → 跳过，不输出
+                    # 思考块 → 输出思考过程
                     elif isinstance(block, ThinkingBlock):
-                        continue
+                        thinking = getattr(block, "thinking", "")
+                        if thinking:
+                            thinking_preview = thinking[:200] + "..." if len(thinking) > 200 else thinking
+                            logger.debug(f"[{agent_name}] [Thinking] {thinking_preview}")
 
                     # 工具调用块 → 终端显示 + INFO 日志
                     elif isinstance(block, ToolUseBlock):
                         tool_name = block.name
+                        tool_use_id = getattr(block, "tool_use_id", "")
                         tool_input = getattr(block, "input", {})
                         tool_calls.append(tool_name)
                         execution_info["tool_calls"].append(tool_name)
 
                         # 终端输出
-                        print(f"\n[{tool_name}]", end="", flush=True)
-                        # 日志输出
+                        print(f"\n[{tool_name}] id={tool_use_id}", end="", flush=True)
+                        # 详细日志输出
                         if isinstance(tool_input, dict):
-                            input_preview = str(tool_input)[:100]
-                            logger.info(f"[{agent_name}] [Tool] {tool_name}({input_preview})")
+                            import json
+                            input_str = json.dumps(tool_input, indent=2, ensure_ascii=False)
+                            logger.info(f"[{agent_name}] [Tool] {tool_name}(id={tool_use_id})")
+                            logger.debug(f"[{agent_name}] [ToolInput] {input_str}")
                         else:
-                            logger.info(f"[{agent_name}] [Tool] {tool_name}")
+                            logger.info(f"[{agent_name}] [Tool] {tool_name}(id={tool_use_id})")
 
                     # 工具结果块 → 只日志，不终端输出
                     elif isinstance(block, ToolResultBlock):
                         tool_use_id = getattr(block, "tool_use_id", "")
-                        logger.info(f"[{agent_name}] [ToolResult] id={tool_use_id} 完成")
+                        is_error = getattr(block, "is_error", False)
+                        result = getattr(block, "result", "")
+                        # 限制结果长度，避免日志过多
+                        if isinstance(result, str) and len(result) > 500:
+                            logger.info(f"[{agent_name}] [ToolResult] id={tool_use_id} error={is_error} (truncated)")
+                            logger.debug(f"[{agent_name}] [ToolResult] id={tool_use_id}:\n{result[:500]}...")
+                        else:
+                            logger.info(f"[{agent_name}] [ToolResult] id={tool_use_id} error={is_error}")
+                            if result:
+                                logger.debug(f"[{agent_name}] [ToolResult] id={tool_use_id}: {result}")
 
             # ResultMessage: 执行结果（成本、统计信息）
             elif isinstance(message, ResultMessage):
@@ -674,12 +702,12 @@ async def run_observer_batch(issue_data_list: list[dict]) -> list[dict]:
     return results
 
 
-def parse_observer_response(response: str, issue_number: int) -> dict:
+def parse_observer_response(response: str, issue_number: int | None = None) -> dict:
     """解析 Observer Agent 的响应
 
     Args:
         response: Agent 响应文本（YAML 格式）
-        issue_number: Issue 编号（未使用，保留 API 兼容）
+        issue_number: Issue 编号（可选，用于日志记录）
 
     Returns:
         解析后的决策结果 {
@@ -690,6 +718,10 @@ def parse_observer_response(response: str, issue_number: int) -> dict:
             "analysis": str,
         }
     """
+    # 如果提供了 issue_number，记录日志
+    if issue_number is not None:
+        logger.debug(f"解析 Issue #{issue_number} 的 Observer 响应")
+
     result = {
         "should_trigger": False,
         "agent": "",

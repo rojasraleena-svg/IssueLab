@@ -62,6 +62,10 @@ jobs:
           LOG_LEVEL: DEBUG
           ENABLE_ARXIV_MCP: true
           ENABLE_GITHUB_MCP: false
+          CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
+          CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
+          ACTIONS_STEP_DEBUG: "true"
+          ACTIONS_RUNNER_DEBUG: "true"
 
       - name: Upload logs
         if: always()
