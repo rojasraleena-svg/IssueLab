@@ -392,8 +392,25 @@ def main():
             print(f"❌ 获取issue信息失败: {e}")
             return 1
 
-        # 构建上下文
-        context = f"**Issue 标题**: {issue_title}\n\n**Issue 内容**:\n{issue_body}"
+        # 构建更详细的上下文，明确告诉Agent应该做什么
+        context = f"""你被邀请参与讨论 GitHub Issue #{args.issue}。
+
+**Issue 标题**: {issue_title}
+
+**Issue 内容**:
+{issue_body}
+
+**你的任务**:
+请根据你的专业领域（见你的 prompt.md 配置），对这个 Issue 提供有价值的见解、建议或评审意见。
+
+**要求**:
+1. 基于 Issue 的具体内容发表观点
+2. 提供建设性的建议或解决方案
+3. 如果相关，可以分享类似案例或最佳实践
+4. 保持专业和友好的语气
+5. 回复应该简洁明了，聚焦核心观点
+
+请直接给出你的回复内容，不需要任何前缀（系统会自动处理）。"""
 
         # 执行agent
         print(f"🚀 使用 {args.agent} 分析 {args.repo}#{args.issue}")
