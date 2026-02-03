@@ -937,21 +937,31 @@ async def run_observer_for_papers(papers: list[dict]) -> list[dict]:
 
     # 构建论文上下文
     papers_context = build_papers_for_observer(papers)
+    agent_matrix = get_agent_matrix_markdown()
 
-    # 加载并修改 observer prompt（使用 arXiv 论文分析模式）
-    # 需要将 prompt 中的 {issue_title}, {issue_body} 等替换为论文上下文
+    # 清理 prompt template 中的 frontmatter，使用 format() 格式化
     prompt_template = observer_config["prompt"]
 
-    # 替换占位符
-    prompt = prompt_template.replace("{issue_number}", "0")
-    prompt = prompt.replace("{issue_title}", "arXiv 论文智能分析")
-    prompt = prompt.replace("{issue_body}", papers_context)
-    prompt = prompt.replace("{comments}", "无评论")
+    # 移除 frontmatter（以 --- 开头的行）
+    lines = prompt_template.split("\n")
+    content_lines = []
+    in_frontmatter = False
+    for line in lines:
+        if line.strip() == "---":
+            in_frontmatter = not in_frontmatter
+            continue
+        if not in_frontmatter:
+            content_lines.append(line)
+    clean_prompt = "\n".join(content_lines)
 
-    # 尝试替换 {agent_matrix}（如果存在）
-    if "{agent_matrix}" in prompt:
-        agent_matrix = get_agent_matrix_markdown()
-        prompt = prompt.replace("{agent_matrix}", agent_matrix)
+    # 使用 format() 格式化占位符（双重花括号转义）
+    prompt = clean_prompt.format(
+        issue_number="0",
+        issue_title="arXiv 论文智能分析",
+        issue_body=papers_context,
+        comments="无评论",
+        agent_matrix=agent_matrix,
+    )
 
     logger.info(f"[Observer] 开始分析 {len(papers)} 篇候选论文")
 
