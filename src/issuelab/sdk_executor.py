@@ -537,7 +537,13 @@ async def run_single_agent(prompt: str, agent_name: str) -> dict:
         }
 
 
-async def run_agents_parallel(issue_number: int, agents: list[str], context: str = "", comment_count: int = 0) -> dict:
+async def run_agents_parallel(
+    issue_number: int,
+    agents: list[str],
+    context: str = "",
+    comment_count: int = 0,
+    available_agents: list[dict] | None = None,
+) -> dict:
     """并行运行多个代理
 
     Args:
@@ -545,6 +551,7 @@ async def run_agents_parallel(issue_number: int, agents: list[str], context: str
         agents: 代理名称列表
         context: 上下文信息
         comment_count: 评论数量（用于增强上下文）
+        available_agents: 系统中可用的智能体列表
 
     Returns:
         {
@@ -561,6 +568,24 @@ async def run_agents_parallel(issue_number: int, agents: list[str], context: str
     full_context = context
     if comment_count > 0:
         full_context += f"\n\n**重要提示**: 本 Issue 已有 {comment_count} 条历史评论。Summarizer 代理应读取并分析这些评论，提取共识、分歧和行动项。"
+
+    # 添加可用智能体上下文
+    agents_context = ""
+    if available_agents:
+        agents_context = "\n\n## 系统中的其他智能体\n\n"
+        agents_context += "当你需要协作时，可以@以下智能体（**每次最多@2个**）：\n\n"
+        
+        for agent in available_agents:
+            name = agent.get("name", "")
+            desc = agent.get("description", "")
+            agents_context += f"- **{name}** - {desc}\n"
+        
+        agents_context += "\n**协作规则：**\n"
+        agents_context += "- 每次回复中最多@2个智能体\n"
+        agents_context += "- 仅在确实需要协作时才@，不要无脑@\n"
+        agents_context += "- 示例场景：需要分诊→@gqy20；需要评审→@gqy22\n"
+        
+        full_context += agents_context
 
     base_prompt = f"""请对 GitHub Issue #{issue_number} 执行以下任务：
 

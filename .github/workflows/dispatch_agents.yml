@@ -51,6 +51,48 @@ jobs:
           labels=$(echo '${{ toJson(github.event.issue.labels.*.name) }}' | tr -d '\n' | tr -d ' ')
           echo "labels=$labels" >> $GITHUB_OUTPUT
 
+      - name: Collect available agents
+        id: collect_agents
+        run: |
+          # 收集所有启用的agents信息
+          python << 'EOF'
+          import json
+          import yaml
+          from pathlib import Path
+
+          registry_dir = Path("agents/_registry")
+          agents_list = []
+
+          if registry_dir.exists():
+              for yml_file in registry_dir.glob("*.yml"):
+                  try:
+                      with open(yml_file) as f:
+                          config = yaml.safe_load(f)
+                      
+                      if config and config.get("enabled", True):
+                          username = config.get("username")
+                          triggers = config.get("triggers", [])
+                          description = config.get("description", "")
+                          
+                          if username and triggers:
+                              agents_list.append({
+                                  "name": triggers[0] if triggers else f"@{username}",
+                                  "description": description or f"{username} 智能体"
+                              })
+                  except Exception as e:
+                      print(f"Warning: Failed to load {yml_file.name}: {e}")
+
+          # 输出为JSON（单行，供workflow使用）
+          with open("/tmp/agents.json", "w") as f:
+              json.dump(agents_list, f, ensure_ascii=False, separators=(",", ":"))
+          print(json.dumps(agents_list, ensure_ascii=False, separators=(",", ":")))
+          EOF
+          
+          agents_json=$(cat /tmp/agents.json)
+          echo "agents=$agents_json" >> $GITHUB_OUTPUT
+          agent_count=$(echo "$agents_json" | python -c 'import sys, json; print(len(json.load(sys.stdin)))')
+          echo "收集到 $agent_count 个可用智能体"
+
       - name: Dispatch to user repositories
         id: dispatch
         continue-on-error: true  # 允许部分失败
@@ -73,6 +115,7 @@ jobs:
             ${{ github.event_name == 'issue_comment' && format('--comment-id {0}', github.event.comment.id) || '' }} \
             ${{ github.event_name == 'issue_comment' && format('--comment-body "{0}"', github.event.comment.body) || '' }} \
             --labels '${{ steps.labels.outputs.labels }}' \
+            --available-agents '${{ steps.collect_agents.outputs.agents }}' \
             --use-github-app
         env:
           PYTHONPATH: ${{ github.workspace }}/src

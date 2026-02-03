@@ -443,6 +443,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--comment-id", type=int, help="Comment ID (if triggered by comment)")
     parser.add_argument("--comment-body", help="Comment body")
     parser.add_argument("--labels", help="Issue labels (JSON array)")
+    parser.add_argument(
+        "--available-agents",
+        default="",
+        help="Available agents in the system (JSON array, will be passed to target workflows)",
+    )
     parser.add_argument("--event-type", default="issue_mention", help="Dispatch event type (default: issue_mention)")
     parser.add_argument(
         "--dry-run",
@@ -533,6 +538,15 @@ def main(argv: list[str] | None = None) -> int:
             client_payload["labels"] = json.loads(args.labels)
         except json.JSONDecodeError:
             print(f"Warning: Invalid JSON in labels: {args.labels}", file=sys.stderr)
+
+    # 添加可用智能体列表
+    if args.available_agents:
+        try:
+            agents_list = json.loads(args.available_agents) if isinstance(args.available_agents, str) else args.available_agents
+            client_payload["available_agents"] = json.dumps(agents_list, ensure_ascii=False)
+            print(f"Including {len(agents_list)} available agents in payload")
+        except json.JSONDecodeError:
+            print(f"Warning: Invalid JSON in available_agents: {args.available_agents}", file=sys.stderr)
 
     # 分发事件
     success_count = 0

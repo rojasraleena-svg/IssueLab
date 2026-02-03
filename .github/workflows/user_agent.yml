@@ -35,6 +35,10 @@ on:
         description: 'Target agent username'
         required: false
         type: string
+      available_agents:
+        description: 'Available agents in the system (JSON array)'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -122,6 +126,7 @@ jobs:
             --repo "${{ inputs.source_repo }}" \
             --issue-title "${{ inputs.issue_title }}" \
             --issue-body "${{ inputs.issue_body }}" \
+            ${{ inputs.available_agents && format('--available-agents ''{0}''', inputs.available_agents) || '' }} \
             --post
 
           echo "Agent execution completed"
