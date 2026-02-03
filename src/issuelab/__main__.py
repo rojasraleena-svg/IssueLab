@@ -431,15 +431,6 @@ def main():
             except json.JSONDecodeError as e:
                 print(f"⚠️  解析available_agents失败: {e}")
 
-        # 解析available_agents
-        available_agents = None
-        if hasattr(args, "available_agents") and args.available_agents:
-            try:
-                available_agents = json.loads(args.available_agents)
-                print(f"📋 收到 {len(available_agents)} 个可用智能体信息")
-            except json.JSONDecodeError as e:
-                print(f"⚠️  解析available_agents失败: {e}")
-
         # 执行agent
         print(f"🚀 使用 {args.agent} 分析 {args.repo}#{args.issue}")
         results = asyncio.run(run_agents_parallel(args.issue, [args.agent], context, 0, available_agents))
