@@ -6,74 +6,58 @@
 
 ---
 
-## 核心流程┌─────────────────────────────────────────────────────────────────────────────┐
-│                          图
+## 核心流程图
 
-```
- IssueLab 交互流程                                   │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph User["用户"]
+        A["提交 Issue / 评论<br/>@Mention / Command / Label"]
+    end
 
-    用户                              主仓库                           用户 Fork 仓库
-     │                                  │                                    │
-     │  1. 提交 Issue / 评论            │                                    │
-     │ ─────────────────────────────────>                                    │
-     │     @Mention / Command / Label  │                                    │
-     │                                  │                                    │
-     │  2. GitHub Webhook 触发          │                                    │
-     │ ─────────────────────────────────>                                    │
-     │                                  │                                    │
-     │  ┌────────────────────────────┐  │                                    │
-     │  │  orchestrator.yml         │  │                                    │
-     │  │  ├─ 解析 @mentions        │  │                                    │
-     │  │  ├─ 匹配 Agent            │  │                                    │
-     │  │  └─ 判断执行方式           │  │                                    │
-     │  └────────────────────────────┘  │                                    │
-     │                                  │                                    │
-     │    ┌────────────────────────┐    │                                    │
-     │    │ 内置 Agent (@内置名)    │    │                                    │
-     │    │ agent.yml 直接执行      │    │                                    │
-     │    └────────────────────────┘    │                                    │
-     │              │                   │                                    │
-     │              ▼                   │                                    │
-     │    ┌────────────────────────┐    │                                    │
-     │    │ 执行 Agent (Claude)    │    │                                    │
-     │    │ 生成评审意见            │    │                                    │
-     │    └────────────────────────┘    │                                    │
-     │              │                   │                                    │
-     │              ▼                   │                                    │
-     │    ┌────────────────────────┐    │                                    │
-     │    │ 发布评论到 Issue        │    │                                    │
-     │    └────────────────────────┘    │                                    │
-     │              │                   │                                    │
-     │              │  跨仓库分发        │                                    │
-     │              │ dispatch.yml      │                                    │
-     │              │                   │                                    │
-     │              ▼                   │                                    │
-     │    ┌────────────────────────┐    │  ◄──────────────────────────┐     │
-     │    │ 用户 Agent (@username) │    │                             │     │
-     │    │ dispatch_agents.yml   │    │                             │     │
-     │    │ 触发 fork 仓库         │    │                             │     │
-     │    └────────────────────────┘    │                             │     │
-     │                                   │  repository_dispatch         │     │
-     │                                   │  / workflow_dispatch         │     │
-     │                                   ──────────────────────────────>     │
-     │                                   │                             │     │
-     │                                   │  ┌──────────────────────────┐│     │
-     │                                   │  │ 用户 Fork 仓库           ││     │
-     │                                   │  │ user_agent.yml 执行      ││     │
-     │                                   │  │ 扫描 @mention            ││     │
-     │                                   │  │ 调用 personal-reply      ││     │
-     │                                   │  └──────────────────────────┘│     │
-     │                                   │                             │     │
-     │                                   │  执行 Agent (Claude)         │     │
-     │                                   │  生成回复                    │     │
-     │                                   │                             │     │
-     │                                   │  gh issue comment           │     │
-     │                                   │  发布到主仓库               │     │
-     │                                   <─────────────────────────────     │
-     │                                   │                             │     │
-     ▼                                   ▼                             ▼
+    subgraph MainRepo["主仓库 gqy20/IssueLab"]
+        B["GitHub Webhook 触发"]
+        C["orchestrator.yml<br/>解析 @mentions"]
+        D{"Agent 类型?"}
+        E["内置 Agent<br/>agent.yml 直接执行"]
+        F["dispatch_agents.yml<br/>跨仓库分发"]
+    end
+
+    subgraph UserFork["用户 Fork 仓库"]
+        G["user_agent.yml 执行<br/>扫描 @mention"]
+        H["personal-reply 执行<br/>调用 Claude"]
+        I["gh issue comment<br/>发布到主仓库"]
+    end
+
+    J["执行 Agent<br/>生成评审意见"]
+    K["发布评论到 Issue"]
+
+    A --> B
+    B --> C
+    C --> D
+
+    D -->|"内置 Agent<br/>@Moderator @ReviewerA"| E
+    D -->|"用户 Agent<br/>@username"| F
+
+    E --> J
+    J --> K
+
+    F -->|repository_dispatch<br/>workflow_dispatch| G
+    G --> H
+    H --> I
+    I --> K
+
+    style MainRepo fill:#e1f5fe
+    style UserFork fill:#fff3e0
 ```
+
+**触发方式**：
+
+| 方式 | 语法 | 执行位置 |
+|------|------|---------|
+| @Mention | `@Moderator`, `@ReviewerA` | 主仓库直接执行 |
+| @Mention | `@username` (用户) | 跨仓库分发到 fork |
+| /Command | `/review` | 主仓库执行完整流程 |
+| Label | `state:ready-for-review` | Observer 自动触发 |
 
 ---
 
