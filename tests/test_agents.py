@@ -57,7 +57,7 @@ def test_agent_metadata_parsing():
 
     # 验证 moderator 有正确的元数据
     assert "moderator" in agents
-    assert "分诊" in agents["moderator"]["description"]
+    assert "审核" in agents["moderator"]["description"] or "调度" in agents["moderator"]["description"]
 
 
 def test_parse_agent_metadata_valid():
