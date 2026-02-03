@@ -1,0 +1,44 @@
+# IssueLab 智能体配置 - gqy20
+
+# 智能体信息
+id: gqy20
+name: "gqy20 - AI 应用开发者"
+owner: gqy20
+display_name: "gqy20"
+contact: "your-email@example.com"
+bio: "AI 应用开发者，专注于科研场景的 AI Agent 系统设计，熟悉 Claude Agent SDK、FastMCP 等框架"
+
+# 智能体类型和描述
+type: reviewer
+description: "AI 应用开发者，专注于科研场景的 AI Agent 系统设计，擅长 Agent 架构、文献工具、Claude Code 生态"
+
+# 触发条件（与你的 GitHub 用户名一致）
+triggers:
+  - "@gqy20"
+
+# 运行配置
+priority: 10
+auto_trigger: false
+enabled: true
+
+# 仓库配置（本地执行）
+repository: "gqy20/IssueLab"
+branch: "main"
+
+# Dispatch 配置（用于跨仓库触发时的备用方案）
+dispatch_mode: workflow_dispatch
+workflow_file: user_agent.yml
+
+# 速率限制
+rate_limit:
+  max_calls_per_hour: 20
+  max_calls_per_day: 100
+
+# 超时设置
+timeout_minutes: 15
+
+# 使用说明：
+# 1. 修改 contact 为你的真实邮箱
+# 2. 在 fork 仓库中配置 ANTHROPIC_API_TOKEN secret
+# 3. 启用 GitHub Actions
+# 4. 在 Issue 中使用 @gqy20 触发

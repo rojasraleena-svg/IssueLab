@@ -29,25 +29,24 @@ BUILTIN_AGENTS = {
 }
 
 
-def is_registered_user_agent(username: str) -> bool:
+def is_registered_user_agent(username: str) -> tuple[bool, dict | None]:
     """检查用户名是否是已注册的用户 agent
 
     Args:
         username: 用户名
 
     Returns:
-        True: 已注册的用户 agent
-        False: 未注册
+        (是否已注册, agent配置)
     """
     agent_yml = Path("agents") / username / "agent.yml"
     if not agent_yml.exists():
-        return False
+        return False, None
     try:
         with open(agent_yml) as f:
             config = yaml.safe_load(f)
-        return config and config.get("enabled", True)
+        return config and config.get("enabled", True), config
     except Exception:
-        return False
+        return False, None
 
 
 def is_builtin_agent(agent_name: str) -> bool:
@@ -101,7 +100,11 @@ def trigger_builtin_agent(agent_name: str, issue_number: int) -> bool:
 
 def trigger_user_agent(username: str, issue_number: int, issue_title: str, issue_body: str) -> bool:
     """
-    触发用户agent（通过dispatch系统）
+    触发用户agent（通过dispatch系统或本地执行）
+
+    逻辑：
+    - 如果是本地仓库（repository == source_repo）：本地执行
+    - 如果是fork仓库：dispatch到用户fork
 
     Args:
         username: 用户名
@@ -113,17 +116,80 @@ def trigger_user_agent(username: str, issue_number: int, issue_title: str, issue
         True: 触发成功
         False: 触发失败
     """
-    try:
-        # 调用dispatch.py的main函数
-        from issuelab.cli.dispatch import main as dispatch_main
+    # 获取当前仓库信息
+    source_repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if not source_repo:
+        logger.error("[ERROR] GITHUB_REPOSITORY environment variable not set")
+        return False
 
-        # 获取当前仓库信息
-        source_repo = os.environ.get("GITHUB_REPOSITORY", "")
-        if not source_repo:
-            logger.error("[ERROR] GITHUB_REPOSITORY environment variable not set")
+    # 读取agent配置
+    is_registered, config = is_registered_user_agent(username)
+    if not is_registered or not config:
+        logger.error(f"[ERROR] Agent {username} not registered or disabled")
+        return False
+
+    target_repo = config.get("repository", "")
+
+    # 判断是本地执行还是dispatch
+    if target_repo == source_repo:
+        # 本地仓库：直接本地执行
+        return trigger_local_user_agent(username, issue_number, issue_title, issue_body)
+    else:
+        # fork仓库：dispatch到用户仓库
+        return dispatch_user_agent(username, issue_number, issue_title, issue_body, source_repo)
+
+
+def trigger_local_user_agent(username: str, issue_number: int, issue_title: str, issue_body: str) -> bool:
+    """本地执行用户agent（主仓库场景）"""
+    import asyncio
+    from issuelab.agents.executor import run_agents_parallel
+    from issuelab.tools.github import get_issue_info
+
+    try:
+        logger.info(f"[INFO] 本地执行用户agent: {username} for #{issue_number}")
+
+        # 获取Issue完整信息
+        issue_info = get_issue_info(issue_number, format_comments=True)
+
+        # 构建上下文
+        context = f"**Issue 标题**: {issue_info['title']}\n\n**Issue 内容**:\n{issue_info['body']}"
+        comment_count = issue_info["comment_count"]
+        comments = issue_info["comments"]
+
+        if comment_count > 0 and comments:
+            context += f"\n\n**本 Issue 共有 {comment_count} 条历史评论：**\n\n{comments}"
+
+        # 本地执行agent
+        results = asyncio.run(run_agents_parallel(issue_number, [username], context, comment_count))
+
+        if username not in results:
+            logger.error(f"[ERROR] Agent {username} 执行失败")
             return False
 
-        # 模拟命令行参数
+        # 获取响应
+        response = results[username].get("response", "")
+
+        # 发布到Issue
+        from issuelab.tools.github import post_comment
+        if post_comment(issue_number, response):
+            logger.info(f"[OK] {username} response posted to issue #{issue_number}")
+            return True
+        else:
+            logger.error(f"[ERROR] Failed to post {username} response")
+            return False
+
+    except Exception as e:
+        logger.error(f"[ERROR] 本地执行agent失败: {e}")
+        return False
+
+
+def dispatch_user_agent(
+    username: str, issue_number: int, issue_title: str, issue_body: str, source_repo: str
+) -> bool:
+    """Dispatch用户agent到fork仓库"""
+    try:
+        from issuelab.cli.dispatch import main as dispatch_main
+
         sys.argv = [
             "dispatch",
             "--mentions",
@@ -140,14 +206,14 @@ def trigger_user_agent(username: str, issue_number: int, issue_title: str, issue
 
         exit_code = dispatch_main()
         if exit_code == 0:
-            logger.info(f"[OK] 已触发用户agent: {username} for #{issue_number}")
+            logger.info(f"[OK] 已dispatch用户agent: {username} for #{issue_number}")
             return True
         else:
-            logger.error(f"[ERROR] 触发用户agent失败: {username} (exit_code={exit_code})")
+            logger.error(f"[ERROR] dispatch用户agent失败: {username} (exit_code={exit_code})")
             return False
 
     except Exception as e:
-        logger.error(f"[ERROR] 触发用户agent异常: {e}")
+        logger.error(f"[ERROR] dispatch用户agent异常: {e}")
         return False
 
 
@@ -167,7 +233,7 @@ def auto_trigger_agent(agent_name: str, issue_number: int, issue_title: str, iss
     """
     if is_builtin_agent(agent_name):
         return trigger_builtin_agent(agent_name, issue_number)
-    elif is_registered_user_agent(agent_name):
+    elif is_registered_user_agent(agent_name)[0]:
         return trigger_user_agent(agent_name, issue_number, issue_title, issue_body)
     else:
         logger.warning(
