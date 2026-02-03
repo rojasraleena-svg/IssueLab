@@ -75,8 +75,6 @@ IssueLab 是一个基于 GitHub Issues + Claude Agent SDK 的 **AI 科研协作�
 | `ANTHROPIC_MODEL` | ⚪ | 模型名称 | 可选，默认 MiniMax-M2.1 |
 | `GITHUB_TOKEN` / `GH_TOKEN` | ✅ | GitHub 认证 | https://github.com/settings/tokens/new |
 | `PAT_TOKEN` | 🌟 推荐 | Personal Access Token | 同上，用于跨仓库操作 |
-| `ENABLE_ARXIV_MCP` | ⚪ | 启用 arXiv MCP | 可选，默认 true |
-| `ENABLE_GITHUB_MCP` | ⚪ | 启用 GitHub MCP | 可选，默认 true |
 | `LOG_LEVEL` | ⚪ | 日志级别 | 可选，默认 INFO |
 
 **配置 PAT_TOKEN（推荐）：**

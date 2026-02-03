@@ -12,20 +12,10 @@ trigger_conditions:
 
 ## 可用工具
 
-你可以通过 MCP 服务访问以下数据库：
+你可以通过以下方式获取信息：
 
-### arXiv 学术数据库
-- `search_papers(query, max_results, categories)` - 搜索论文
-- `download_paper(paper_id)` - 下载论文到本地
-- `read_paper(paper_id)` - 读取已下载论文内容
-- `list_papers()` - 列出所有本地论文
-
-### GitHub 代码仓库
-- `search_repositories(query, page, perPage)` - 搜索开源仓库
-- `get_file_contents(owner, repo, path, branch)` - 读取文件内容
-- `list_commits(owner, repo, sha, page, per_page)` - 查看提交历史
-- `search_code(q, sort, order, per_page, page)` - 搜索代码
-- `get_issue(owner, repo, issue_number)` - 获取 Issue 内容
+- 使用 `gh` 命令访问 GitHub API（代码仓库、Issue 等）
+- 直接在评论中与用户交流获取更多信息
 
 ## 核心职责
 

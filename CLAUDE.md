@@ -91,11 +91,6 @@ trigger_conditions:
 
 3. **Label**: Add `state:ready-for-review` to trigger full review
 
-### MCP Integrations
-
-- **arXiv MCP**: `search_papers`, `download_paper`, `read_paper`
-- **GitHub MCP**: `search_repositories`, `get_file_contents`, `list_commits`, `search_code`
-
 ## Environment Variables
 
 | Variable | Purpose | Default |
@@ -105,9 +100,6 @@ trigger_conditions:
 | `GITHUB_TOKEN` / `GH_TOKEN` | GitHub auth (GH_TOKEN priority) | Required |
 | `ANTHROPIC_MODEL` | Model name | MiniMax-M2.1 |
 | `ANTHROPIC_BASE_URL` | API proxy URL | https://api.minimaxi.com/anthropic |
-| `ENABLE_ARXIV_MCP` | Enable arXiv MCP | true |
-| `ENABLE_GITHUB_MCP` | Enable GitHub MCP | true |
-| `ARXIV_STORAGE_PATH` | arXiv paper storage | ~/.arxiv-mcp-server/papers |
 | `LOG_LEVEL` | Logging level | INFO |
 | `LOG_FILE` | Log file path | - |
 | `CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK` | Skip SDK version check | true |

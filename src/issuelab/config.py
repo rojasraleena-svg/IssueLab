@@ -72,23 +72,6 @@ class Config:
             env["GH_TOKEN"] = token
         return env
 
-    # MCP 配置
-    @staticmethod
-    def get_arxiv_storage_path() -> str:
-        """获取 ArXiv MCP 存储路径"""
-        default_path = str(Path.home() / ".arxiv-mcp-server" / "papers")
-        return os.environ.get("ARXIV_STORAGE_PATH", default_path)
-
-    @staticmethod
-    def is_arxiv_mcp_enabled() -> bool:
-        """检查是否启用 ArXiv MCP"""
-        return os.environ.get("ENABLE_ARXIV_MCP", "true").lower() == "true"
-
-    @staticmethod
-    def is_github_mcp_enabled() -> bool:
-        """检查是否启用 GitHub MCP"""
-        return os.environ.get("ENABLE_GITHUB_MCP", "true").lower() == "true"
-
     # 日志配置
     @staticmethod
     def get_log_level() -> str:

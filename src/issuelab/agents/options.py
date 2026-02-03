@@ -3,8 +3,6 @@
 处理 SDK 选项的创建和缓存管理。
 """
 
-import os
-
 from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions
 
 from issuelab.agents.config import AgentConfig
@@ -36,8 +34,6 @@ def _create_agent_options_impl(
     env = Config.get_anthropic_env()
     env["CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK"] = "true"
 
-    arxiv_storage_path = Config.get_arxiv_storage_path()
-
     # 收集 SDK 内部日志的回调
     sdk_logs: list[str] = []
 
@@ -50,46 +46,11 @@ def _create_agent_options_impl(
         # 记录到日志
         logger.debug(f"[SDK] {message}")
 
-    mcp_servers = []
-    if Config.is_arxiv_mcp_enabled():
-        mcp_servers.append(
-            {
-                "name": "arxiv-mcp-server",
-                "command": "arxiv-mcp-server",
-                "args": ["--storage-path", arxiv_storage_path],
-                "env": env.copy(),
-            }
-        )
-
-    if Config.is_github_mcp_enabled():
-        mcp_servers.append(
-            {
-                "name": "github-mcp-server",
-                "command": "npx",
-                "args": ["-y", "@modelcontextprotocol/server-github"],
-                "env": env.copy(),
-            }
-        )
-
     agents = discover_agents()
 
     base_tools = ["Read", "Write", "Bash"]
 
-    arxiv_tools = []
-    if os.environ.get("ENABLE_ARXIV_MCP", "true").lower() == "true":
-        arxiv_tools = ["search_papers", "download_paper", "read_paper", "list_papers"]
-
-    github_tools = []
-    if os.environ.get("ENABLE_GITHUB_MCP", "true").lower() == "true":
-        github_tools = [
-            "search_repositories",
-            "get_file_contents",
-            "list_commits",
-            "search_code",
-            "get_issue",
-        ]
-
-    all_tools = base_tools + arxiv_tools + github_tools
+    all_tools = base_tools
     model = Config.get_anthropic_model()
 
     agent_definitions = {}
@@ -109,7 +70,6 @@ def _create_agent_options_impl(
         max_budget_usd=max_budget_usd if max_budget_usd is not None else AgentConfig().max_budget_usd,
         setting_sources=["user", "project"],
         env=env,
-        mcp_servers=mcp_servers,
         stderr=sdk_stderr_handler,  # 捕获 SDK 内部详细日志
     )
 

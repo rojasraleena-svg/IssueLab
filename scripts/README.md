@@ -25,7 +25,7 @@
 
 **优势：**
 - ✅ 无需 `uv sync`（节省 ~10-20 秒）
-- ✅ 不安装 Claude SDK、MCP 等重量级依赖
+- ✅ 不安装 Claude SDK 等重量级依赖
 - ✅ 只需要 PyYAML 和 requests
 
 ### 2. 完整功能 Workflow（使用 uv run）

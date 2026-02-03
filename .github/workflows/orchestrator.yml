@@ -42,14 +42,6 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Cache arxiv-mcp-server
-        uses: actions/cache@v4
-        with:
-          path: ~/.local/share/uv/tools/arxiv-mcp-server
-          key: arxiv-mcp-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            arxiv-mcp-${{ runner.os }}-
-
       - name: Update issue state
         run: |
           gh issue edit ${{ github.event.issue.number }} \
@@ -70,11 +62,8 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
           LOG_FILE: ${{ github.workspace }}/logs/auto_review_${{ github.event.issue.number }}.log
           LOG_LEVEL: DEBUG
-          ENABLE_ARXIV_MCP: false
-          ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
           ACTIONS_STEP_DEBUG: "true"
@@ -189,11 +178,8 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
           LOG_FILE: ${{ github.workspace }}/logs/moderator_${{ github.event.issue.number }}.log
           LOG_LEVEL: DEBUG
-          ENABLE_ARXIV_MCP: false
-          ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
           ACTIONS_STEP_DEBUG: "true"
@@ -241,11 +227,8 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
           LOG_FILE: ${{ github.workspace }}/logs/reviewer_a_${{ github.event.issue.number }}.log
           LOG_LEVEL: DEBUG
-          ENABLE_ARXIV_MCP: false
-          ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
           ACTIONS_STEP_DEBUG: "true"
@@ -293,11 +276,8 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
           LOG_FILE: ${{ github.workspace }}/logs/reviewer_b_${{ github.event.issue.number }}.log
           LOG_LEVEL: DEBUG
-          ENABLE_ARXIV_MCP: false
-          ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
           ACTIONS_STEP_DEBUG: "true"
@@ -345,11 +325,8 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
           LOG_FILE: ${{ github.workspace }}/logs/summarizer_${{ github.event.issue.number }}.log
           LOG_LEVEL: DEBUG
-          ENABLE_ARXIV_MCP: false
-          ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
           ACTIONS_STEP_DEBUG: "true"
@@ -397,11 +374,8 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
           LOG_FILE: ${{ github.workspace }}/logs/echo_${{ github.event.issue.number }}.log
           LOG_LEVEL: DEBUG
-          ENABLE_ARXIV_MCP: false
-          ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
           ACTIONS_STEP_DEBUG: "true"
@@ -443,14 +417,6 @@ jobs:
 
       - name: Install dependencies
         run: uv sync
-
-      - name: Cache arxiv-mcp-server
-        uses: actions/cache@v4
-        with:
-          path: ~/.local/share/uv/tools/arxiv-mcp-server
-          key: arxiv-mcp-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            arxiv-mcp-${{ runner.os }}-
 
       - name: Extract command
         id: extract
@@ -540,11 +506,8 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
           LOG_FILE: ${{ github.workspace }}/logs/review_${{ github.event.issue.number }}.log
           LOG_LEVEL: DEBUG
-          ENABLE_ARXIV_MCP: false
-          ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
           ACTIONS_STEP_DEBUG: "true"
@@ -604,11 +567,8 @@ jobs:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          ARXIV_STORAGE_PATH: ${{ github.workspace }}/.arxiv-papers
           LOG_FILE: ${{ github.workspace }}/logs/triggered_${{ steps.extract_agent.outputs.agent_name }}_${{ github.event.issue.number }}.log
           LOG_LEVEL: DEBUG
-          ENABLE_ARXIV_MCP: false
-          ENABLE_GITHUB_MCP: false
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
           CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
 
