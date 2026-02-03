@@ -13,8 +13,8 @@
 | Secret 名称 | 说明 | 获取方式 |
 |------------|------|---------|
 | `ANTHROPIC_AUTH_KEY` | Anthropic API 密钥 | https://console.anthropic.com/settings/keys |
-| `ANTHROPIC_BASE_URL` | API 基础 URL（可选） | 默认：https://api.anthropic.com |
-| `ANTHROPIC_MODEL` | 模型名称（可选） | 默认：claude-sonnet-4-20250514 |
+| `ANTHROPIC_BASE_URL` | API 基础 URL（可选） | 默认：https://api.minimaxi.com/anthropic |
+| `ANTHROPIC_MODEL` | 模型名称（可选） | 默认：MiniMax-M2.1 |
 
 **没有配置会报错**：
 ```
@@ -30,7 +30,7 @@ Invalid API key · Please run /login
 | Token 类型 | 回复显示为 | 跨仓库评论 | 触发 workflow |
 |-----------|-----------|-----------|--------------|
 | `GITHUB_TOKEN`（默认） | 🤖 github-actions bot | ❌ 无权限 | ❌ 不触发 |
-| `PERSONAL_GITHUB_TOKEN` | 👤 你的用户名 | ✅ 有权限 | ✅ 可触发 |
+| `PAT_TOKEN` | 👤 你的用户名 | ✅ 有权限 | ✅ 可触发 |
 
 **配置步骤**：
 
@@ -47,7 +47,7 @@ Invalid API key · Please run /login
 2. **添加到你的 fork 仓库**
    - Settings → Secrets and variables → Actions
    - New repository secret
-   - Name: `PERSONAL_GITHUB_TOKEN`
+   - Name: `PAT_TOKEN`
    - Secret: 粘贴刚才复制的 PAT
    - Add secret
 
@@ -62,6 +62,7 @@ Invalid API key · Please run /login
 
 ```yaml
 # workflow 使用 secrets.GITHUB_TOKEN
+# 无需额外配置
 ```
 
 **结果**：
@@ -75,7 +76,8 @@ Invalid API key · Please run /login
 ### 🟢 配置 PAT（推荐）
 
 ```yaml
-# workflow 使用 secrets.PERSONAL_GITHUB_TOKEN
+# workflow 使用 secrets.PAT_TOKEN
+# 需要在 Settings → Secrets 中添加
 ```
 
 **结果**：
@@ -112,7 +114,7 @@ GitHub 的安全机制：
 ### Q4: PAT 过期了怎么办？
 
 1. 重新生成：https://github.com/settings/tokens
-2. 更新你的 fork 仓库 secret：Settings → Secrets and variables → Actions → PERSONAL_GITHUB_TOKEN → Update
+2. 更新你的 fork 仓库 secret：Settings → Secrets and variables → Actions → PAT_TOKEN → Update
 
 ### Q5: 能用 Fine-grained PAT 吗？
 
@@ -135,7 +137,9 @@ gh secret list
 
 # 应该看到：
 # ANTHROPIC_AUTH_KEY        Updated ...
-# PERSONAL_GITHUB_TOKEN     Updated ...  (可选)
+# PAT_TOKEN                 Updated ...  (可选)
+# ANTHROPIC_BASE_URL        Updated ...  (可选，默认: https://api.minimaxi.com/anthropic)
+# ANTHROPIC_MODEL           Updated ...  (可选，默认: MiniMax-M2.1)
 ```
 
 ## 最佳实践

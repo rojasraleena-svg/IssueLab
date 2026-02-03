@@ -50,7 +50,7 @@ timeout_minutes: 15              # 可选：单次运行超时时间（分钟）
 #   - 权限受限，但足够基本使用
 #
 # 方式2：使用个人 PAT（推荐进阶用户）
-#   - Secret 名称：PERSONAL_GITHUB_TOKEN
+#   - Secret 名称：PAT_TOKEN
 #   - Secret 值：你的 GitHub Personal Access Token
 #   - 创建 PAT：Settings → Developer settings → Personal access tokens → Generate new token
 #   - 需要权限：repo (可以评论) + workflow (可以触发workflow)

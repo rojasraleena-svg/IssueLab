@@ -416,7 +416,7 @@ def main():
                 if gh_token == os.environ.get("GITHUB_TOKEN", ""):
                     print(
                         "\n⚠️  警告: 使用默认 GITHUB_TOKEN 可能无法跨仓库评论"
-                        "\n建议: 配置 PERSONAL_GITHUB_TOKEN secret 以显示用户身份并获得完整权限"
+                        "\n建议: 配置 PAT_TOKEN secret 以显示用户身份并获得完整权限"
                         "\n详见: agents/_template/agent.yml 中的 GitHub Token 配置说明\n"
                     )
 
@@ -436,7 +436,7 @@ def main():
                     print(
                         "\n💡 这可能是权限问题！"
                         "\n解决方法："
-                        "\n1. 在你的 fork 仓库设置 PERSONAL_GITHUB_TOKEN secret"
+                        "\n1. 在你的 fork 仓库设置 PAT_TOKEN secret"
                         "\n2. 创建 PAT: Settings → Developer settings → Personal access tokens"
                         "\n3. 需要权限: repo (评论) + workflow (触发)"
                         "\n\n配置后，你的回复会显示为真实用户名，而非 bot\n"
