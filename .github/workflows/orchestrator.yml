@@ -101,8 +101,10 @@ jobs:
     steps:
       - name: Detect built-in agents
         id: detect
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          COMMENT="${{ github.event.comment.body }}"
+          COMMENT="$COMMENT_BODY"
 
           # 定义内置 Agent 映射（@Mention 别名 -> agent name）
           declare -A AGENT_MAP=(
@@ -485,8 +487,10 @@ jobs:
 
       - name: Extract command
         id: extract
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          COMMENT="${{ github.event.comment.body }}"
+          COMMENT="$COMMENT_BODY"
           if echo "$COMMENT" | grep -q '/confirm-close'; then
             echo "command=/confirm-close" >> $GITHUB_OUTPUT
           elif echo "$COMMENT" | grep -q '/review'; then
