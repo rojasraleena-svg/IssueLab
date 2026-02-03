@@ -388,6 +388,8 @@ async def run_single_agent(prompt: str, agent_name: str) -> dict:
         AssistantMessage,
         ResultMessage,
         TextBlock,
+        ThinkingBlock,
+        ToolResultBlock,
         ToolUseBlock,
     )
 
@@ -419,31 +421,46 @@ async def run_single_agent(prompt: str, agent_name: str) -> dict:
                 logger.debug(f"[{agent_name}] 收到消息 (第 {turn_count} 轮)")
 
                 for block in message.content:
-                    # 文本块
+                    # 文本块 → 终端流式输出 + INFO 日志
                     if isinstance(block, TextBlock):
                         text = block.text
                         response_text.append(text)
                         execution_info["text_blocks"].append(text)
-                        # 记录部分内容（不超过 200 字符）
-                        text_preview = text[:200].replace("\n", " ")
-                        logger.debug(f"[{agent_name}] [TextBlock] {text_preview}...")
-                    # 工具调用块
+
+                        # 终端流式输出
+                        print(text, end="", flush=True)
+                        # 日志记录（INFO 级别）
+                        logger.info(f"[{agent_name}] [Text] {text[:100]}...")
+
+                    # 思考块 → 跳过，不输出
+                    elif isinstance(block, ThinkingBlock):
+                        continue
+
+                    # 工具调用块 → 终端显示 + INFO 日志
                     elif isinstance(block, ToolUseBlock):
                         tool_name = block.name
                         tool_input = getattr(block, "input", {})
                         tool_calls.append(tool_name)
                         execution_info["tool_calls"].append(tool_name)
 
-                        # 记录工具调用详情
+                        # 终端输出
+                        print(f"\n[{tool_name}]", end="", flush=True)
+                        # 日志输出
                         if isinstance(tool_input, dict):
                             input_preview = str(tool_input)[:100]
-                            logger.info(f"[{agent_name}] [ToolUse] {tool_name}({input_preview})")
+                            logger.info(f"[{agent_name}] [Tool] {tool_name}({input_preview})")
                         else:
-                            logger.info(f"[{agent_name}] [ToolUse] {tool_name}")
+                            logger.info(f"[{agent_name}] [Tool] {tool_name}")
+
+                    # 工具结果块 → 只日志，不终端输出
+                    elif isinstance(block, ToolResultBlock):
+                        tool_use_id = getattr(block, "tool_use_id", "")
+                        logger.info(f"[{agent_name}] [ToolResult] id={tool_use_id} 完成")
 
             # ResultMessage: 执行结果（成本、统计信息）
             elif isinstance(message, ResultMessage):
-                # ResultMessage 字段: session_id, num_turns, total_cost_usd, duration_ms, usage
+                # 打印统计信息
+                print("\n")
                 session_id = message.session_id or ""
                 cost_usd = message.total_cost_usd or 0.0
                 result_turns = message.num_turns or turn_count
@@ -457,7 +474,7 @@ async def run_single_agent(prompt: str, agent_name: str) -> dict:
                     logger.info(f"[{agent_name}] [Result] session_id={session_id}")
                     first_result = False
 
-                # 记录成本和统计
+                # 日志记录成本和统计
                 logger.info(
                     f"[{agent_name}] [Stats] 成本: ${cost_usd:.4f}, "
                     f"轮数: {result_turns}, 工具调用: {len(tool_calls)}"
