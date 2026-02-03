@@ -68,7 +68,7 @@ timeout_minutes: 15              # 可选：单次运行超时时间（分钟）
 #    - 不需要子目录！
 #
 # 2. 智能体类型：
-#    - moderator：分诊员，负责检查 Issue 完整性和协调流程
+#    - moderator：审核员，负责检查 Issue 完整性和协调流程
 #    - reviewer：评审员，对 Issue 进行深度评审
 #    - summarizer：总结员，汇总讨论内容
 #

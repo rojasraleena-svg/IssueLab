@@ -28,4 +28,4 @@ rate_limit:
   max_calls_per_day: 500
 
 # 备注
-description: "IssueLab 官方分诊员智能体，负责检查 Issue 完整性并协调评审流程"
+description: "IssueLab 官方审核员智能体，负责检查 Issue 完整性并协调评审流程"

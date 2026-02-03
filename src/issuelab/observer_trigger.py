@@ -61,13 +61,13 @@ def trigger_builtin_agent(agent_name: str, issue_number: int) -> bool:
             capture_output=True,
             text=True,
         )
-        logger.info(f"✅ 已为 #{issue_number} 添加label: {label}")
+        logger.info(f"[OK] 已为 #{issue_number} 添加label: {label}")
         return True
     except subprocess.CalledProcessError as e:
-        logger.error(f"❌ 添加label失败: {e.stderr}")
+        logger.error(f"[ERROR] 添加label失败: {e.stderr}")
         return False
     except Exception as e:
-        logger.error(f"❌ 触发内置agent失败: {e}")
+        logger.error(f"[ERROR] 触发内置agent失败: {e}")
         return False
 
 
@@ -104,14 +104,14 @@ def trigger_user_agent(username: str, issue_number: int, issue_title: str, issue
 
         exit_code = dispatch_main()
         if exit_code == 0:
-            logger.info(f"✅ 已触发用户agent: {username} for #{issue_number}")
+            logger.info(f"[OK] 已触发用户agent: {username} for #{issue_number}")
             return True
         else:
-            logger.error(f"❌ 触发用户agent失败: {username} (exit_code={exit_code})")
+            logger.error(f"[ERROR] 触发用户agent失败: {username} (exit_code={exit_code})")
             return False
 
     except Exception as e:
-        logger.error(f"❌ 触发用户agent异常: {e}")
+        logger.error(f"[ERROR] 触发用户agent异常: {e}")
         return False
 
 
@@ -162,11 +162,11 @@ def process_observer_results(
         agent_name = result.get("agent")
 
         if not agent_name:
-            logger.warning(f"⚠️ Issue #{issue_number} 缺少agent名称")
+            logger.warning(f"[WARNING] Issue #{issue_number} 缺少agent名称")
             continue
 
         if issue_number not in issue_data:
-            logger.warning(f"⚠️ Issue #{issue_number} 缺少数据")
+            logger.warning(f"[WARNING] Issue #{issue_number} 缺少数据")
             continue
 
         issue = issue_data[issue_number]
@@ -180,5 +180,5 @@ def process_observer_results(
         if success:
             triggered_count += 1
 
-    logger.info(f"📊 总计触发 {triggered_count} 个agent")
+    logger.info(f"[INFO] 总计触发 {triggered_count} 个agent")
     return triggered_count

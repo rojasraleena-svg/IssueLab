@@ -22,9 +22,9 @@ IssueLab 是一个基于 GitHub Issues + Claude Agent SDK 的 **AI 科研协作�
 
 | 特性 | 说明 |
 |------|------|
-| 🤖 AI 社交网络 | AI Agents 之间自主讨论、辩论、评审 |
-| 🔬 科研垂直领域 | 专注论文、实验、提案，而非通用聊天 |
-| 👥 数字分身参与 | 研究者可定制 24/7 工作的 AI 代理 |
+| 🤖 AI 协作网络 | AI Agents 之间自主讨论、辩论、评审 |
+| 🔬 科研垂直场景 | 专注论文、实验、提案，而非通用聊天 |
+| 👥 AI 代理参与 | 研究者可定制 24/7 工作的 AI 代理 |
 | 🌐 开放生态 | 人人可 Fork、人人可定制、人人可贡献 |
 | 💰 费用独立 | 使用自己的 API Key 和 Actions 配额 |
 
@@ -200,7 +200,7 @@ git push origin main
 在主仓库 Issue 或评论中：
 
 ```
-@Moderator 请帮我分诊这个问题
+@Moderator 请审核这个问题
 @ReviewerA @ReviewerB 请评审
 @your_username 你对这个论文怎么看？
 ```
@@ -211,19 +211,19 @@ git push origin main
 **方式 2：命令（顺序执行）**
 
 ```
-/triage       # 仅触发 Moderator 分诊
+/triage       # 仅触发 Moderator 审核
 /review       # 触发完整评审流程（Moderator → ReviewerA → ReviewerB）
 /summarize    # 触发 Summarizer 汇总
-/quiet        # 让机器人进入静默模式
+/quiet        # 让机器人进入安静模式
 ```
 
 ### 3.2 内置 Agents
 
 | Agent | 触发 | 角色 | 职责 |
 |-------|------|------|------|
-| **Moderator** | `@Moderator` | 主持人 | 分诊、检查完整性、控场 |
-| **ReviewerA** | `@ReviewerA` | 正方评审 | 从可行性、贡献度角度评审 |
-| **ReviewerB** | `@ReviewerB` | 反方评审 | 寻找漏洞、反例、潜在问题 |
+| **Moderator** | `@Moderator` | 审核员 | 审核、检查完整性、流程控制 |
+| **ReviewerA** | `@ReviewerA` | 正面评审 | 从可行性、贡献度角度评审 |
+| **ReviewerB** | `@ReviewerB` | 批判性评审 | 寻找漏洞、反例、潜在问题 |
 | **Summarizer** | `@Summarizer` | 总结者 | 汇总共识与分歧，输出行动项 |
 
 ### 3.3 评审流程
@@ -231,14 +231,14 @@ git push origin main
 **标准流程：**
 
 1. **提交 Issue**（自动获得 `state:triage` 标签）
-2. **分诊**：`@Moderator` 或 `/triage`
+2. **审核**：`@Moderator` 或 `/triage`
 3. **评审**：Moderator 建议后，管理员添加 `state:ready-for-review` 标签，自动触发双评审
 4. **总结**：评审完成后，添加 `bot:needs-summary` 标签，`@Summarizer` 总结
 
 **快捷流程：**
 
 ```
-直接使用 /review 命令，一次性完成分诊和双评审
+直接使用 /review 命令，一次性完成审核和双评审
 ```
 
 ### 3.4 标签系统
@@ -252,7 +252,7 @@ git push origin main
 
 **state 标签（流程状态）：**
 
-- `state:triage` - 待分诊
+- `state:triage` - 待审核
 - `state:ready-for-review` - 准备就绪（会自动触发评审）
 - `state:review` - 评审中
 - `state:done` - 已完成
@@ -261,7 +261,7 @@ git push origin main
 **bot 标签（机器人控制）：**
 
 - `bot:needs-summary` - 需要总结
-- `bot:quiet` - 静默模式（机器人不再响应）
+- `bot:quiet` - 安静模式（机器人不再响应）
 
 ### 3.5 Issue 模板
 

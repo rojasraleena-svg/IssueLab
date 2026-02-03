@@ -1,8 +1,8 @@
-# IssueLab 官方分诊员智能体配置
+# IssueLab 官方审核员智能体配置
 
 # 智能体信息
 id: gqy20-moderator
-name: "IssueLab 分诊员"
+name: "IssueLab 审核员"
 owner: gqy20
 display_name: "IssueLab 官方"
 contact: "qingyu_ge@foxmail.com"

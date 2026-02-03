@@ -60,10 +60,10 @@ def trigger_mentioned_agents(
     mentions = extract_mentions(response)
 
     if not mentions:
-        logger.info("📭 Response中没有@mentions")
+        logger.info("[INFO] Response中没有@mentions")
         return {}
 
-    logger.info(f"📬 发现 {len(mentions)} 个@mentions: {mentions}")
+    logger.info(f"[INFO] 发现 {len(mentions)} 个@mentions: {mentions}")
 
     from issuelab.observer_trigger import auto_trigger_agent
 
@@ -71,10 +71,10 @@ def trigger_mentioned_agents(
     for username in mentions:
         # 排除常见的非agent mentions（如GitHub bot账号）
         if username.lower() in ["github", "github-actions", "dependabot"]:
-            logger.info(f"⏭️  跳过系统账号: {username}")
+            logger.info(f"[SKIP] 跳过系统账号: {username}")
             continue
 
-        logger.info(f"🚀 触发被@的agent: {username}")
+        logger.info(f"[INFO] 触发被@的agent: {username}")
         success = auto_trigger_agent(
             agent_name=username,
             issue_number=issue_number,
@@ -84,9 +84,9 @@ def trigger_mentioned_agents(
         results[username] = success
 
         if success:
-            logger.info(f"✅ 成功触发 {username}")
+            logger.info(f"[OK] 成功触发 {username}")
         else:
-            logger.error(f"❌ 触发 {username} 失败")
+            logger.error(f"[ERROR] 触发 {username} 失败")
 
     return results
 

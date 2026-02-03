@@ -117,7 +117,7 @@ def main():
 
     # 自动获取 Issue 信息（适用于 execute, review, observe）
     if args.command in ("execute", "review", "observe"):
-        print(f"📥 正在获取 Issue #{args.issue} 信息...")
+        print(f"[INFO] 正在获取 Issue #{args.issue} 信息...")
         issue_info = get_issue_info(args.issue, format_comments=True)
 
         # 构建上下文
@@ -128,7 +128,7 @@ def main():
         if comment_count > 0 and comments:
             context += f"\n\n**本 Issue 共有 {comment_count} 条历史评论，请仔细阅读并分析：**\n\n{comments}"
 
-        print(f"✅ 已获取: 标题={issue_info['title'][:30]}..., 评论数={comment_count}")
+        print(f"[OK] 已获取: 标题={issue_info['title'][:30]}..., 评论数={comment_count}")
     else:
         context = ""
         comment_count = 0
@@ -139,10 +139,10 @@ def main():
         agents = parse_agents_arg(args.agents)
 
         if not agents:
-            print("❌ 未提供有效的 agent 名称")
+            print("[ERROR] 未提供有效的 agent 名称")
             return 1
 
-        print(f"🚀 执行 agents: {agents}")
+        print(f"[START] 执行 agents: {agents}")
 
         results = asyncio.run(run_agents_parallel(args.issue, agents, context, comment_count))
 
@@ -169,17 +169,17 @@ def main():
             )
 
             if processed["mentions"]:
-                print(f"📬 发现 @mentions: {', '.join(processed['mentions'])}")
+                print(f"[INFO] 发现 @mentions: {', '.join(processed['mentions'])}")
                 for mentioned_user, success in processed["dispatch_results"].items():
-                    status = "✅" if success else "❌"
+                    status = "[OK]" if success else "[ERROR]"
                     print(f"  {status} 触发 {mentioned_user}")
 
             # 如果需要，自动发布到 Issue
             if getattr(args, "post", False):
                 if post_comment(args.issue, response):
-                    print(f"✅ {agent_name} response posted to issue #{args.issue}")
+                    print(f"[OK] {agent_name} response posted to issue #{args.issue}")
                 else:
-                    print(f"❌ Failed to post {agent_name} response")
+                    print(f"[ERROR] Failed to post {agent_name} response")
 
     elif args.command == "review":
         # 顺序执行：moderator -> reviewer_a -> reviewer_b -> summarizer
@@ -198,9 +198,9 @@ def main():
             # 如果需要，自动发布到 Issue
             if getattr(args, "post", False):
                 if post_comment(args.issue, response):
-                    print(f"✅ {agent_name} response posted to issue #{args.issue}")
+                    print(f"[OK] {agent_name} response posted to issue #{args.issue}")
                 else:
-                    print(f"❌ Failed to post {agent_name} response")
+                    print(f"[ERROR] Failed to post {agent_name} response")
 
     elif args.command == "observe":
         # 运行 Observer Agent 分析 Issue
@@ -219,9 +219,9 @@ def main():
             # 如果需要，自动发布触发评论
             if getattr(args, "post", False):
                 if result.get("comment") and post_comment(args.issue, result["comment"]):
-                    print(f"\n✅ Trigger comment posted to issue #{args.issue}")
+                    print(f"\n[OK] Trigger comment posted to issue #{args.issue}")
                 else:
-                    print("\n❌ Failed to post trigger comment")
+                    print("\n[ERROR] Failed to post trigger comment")
         else:
             print(f"Skip Reason: {result.get('reason', 'N/A')}")
 
@@ -230,7 +230,7 @@ def main():
         issue_numbers = [int(i.strip()) for i in args.issues.split(",") if i.strip()]
 
         if not issue_numbers:
-            print("❌ 未提供有效的 Issue 编号")
+            print("[ERROR] 未提供有效的 Issue 编号")
             return
 
         print(f"\n=== 并行分析 {len(issue_numbers)} 个 Issues ===")
@@ -265,11 +265,11 @@ def main():
                     }
                 )
             except Exception as e:
-                print(f"⚠️  获取 Issue #{issue_num} 失败: {e}")
+                print(f"[WARNING] 获取 Issue #{issue_num} 失败: {e}")
                 continue
 
         if not issue_data_list:
-            print("❌ 无有效的 Issue 数据")
+            print("[ERROR] 无有效的 Issue 数据")
             return
 
         # 并行分析
@@ -288,7 +288,7 @@ def main():
             should_trigger = result.get("should_trigger", False)
 
             print(f"Issue #{issue_num}:")
-            print(f"  触发: {'✅ 是' if should_trigger else '❌ 否'}")
+            print(f"  触发: {'[OK] 是' if should_trigger else '[ERROR] 否'}")
 
             if should_trigger:
                 triggered_count += 1
@@ -309,22 +309,22 @@ def main():
                             issue_body=issue_info.get("issue_body", ""),
                         )
                         if success:
-                            print("  🚀 已自动触发 agent")
+                            print("  [OK] 已自动触发 agent")
                         else:
-                            print("  ❌ 自动触发失败")
+                            print("  [ERROR] 自动触发失败")
 
                 # 如果需要，自动发布触发评论（已弃用，使用 auto_trigger 代替）
                 elif getattr(args, "post", False):
                     comment = result.get("comment")
                     if comment and post_comment(issue_num, comment):
-                        print("  ✅ 已发布触发评论（⚠️ 注意：bot评论不会触发workflow）")
+                        print("  [OK] 已发布触发评论（[WARNING] 注意：bot评论不会触发workflow）")
                     else:
-                        print("  ❌ 发布评论失败")
+                        print("  [ERROR] 发布评论失败")
             else:
                 print(f"  原因: {result.get('reason', 'N/A')}")
 
             if "error" in result:
-                print(f"  ⚠️  错误: {result['error']}")
+                print(f"  [WARNING] 错误: {result['error']}")
 
             print()
 
@@ -342,14 +342,14 @@ def main():
             with open(agent_config_path) as f:
                 agent_config = yaml.safe_load(f)
         except FileNotFoundError:
-            print(f"❌ 未找到agent配置: {agent_config_path}")
+            print(f"[ERROR] 未找到agent配置: {agent_config_path}")
             return 1
 
         # 解析issue编号
         issue_numbers = [int(n.strip()) for n in args.issues.split(",") if n.strip().isdigit()]
 
         if not issue_numbers:
-            print("❌ 未提供有效的issue编号")
+            print("[ERROR] 未提供有效的issue编号")
             return 1
 
         # 扫描issues
@@ -376,7 +376,7 @@ def main():
             with open(agent_config_path) as f:
                 agent_config = yaml.safe_load(f)
         except FileNotFoundError:
-            print(f"❌ 未找到agent配置: {agent_config_path}")
+            print(f"[ERROR] 未找到agent配置: {agent_config_path}")
             return 1
 
         # 获取issue信息：优先使用传入的参数，否则从gh获取
@@ -397,7 +397,7 @@ def main():
                 issue_body = issue_data.get("body", "")
                 print(f"从主仓库获取Issue信息")
             except Exception as e:
-                print(f"❌ 获取issue信息失败: {e}")
+                print(f"[ERROR] 获取issue信息失败: {e}")
                 return 1
 
         # 构建简洁明确的上下文
@@ -424,16 +424,16 @@ def main():
         if hasattr(args, "available_agents") and args.available_agents:
             try:
                 available_agents = json.loads(args.available_agents)
-                print(f"📋 收到 {len(available_agents)} 个可用智能体信息")
+                print(f"[INFO] 收到 {len(available_agents)} 个可用智能体信息")
             except json.JSONDecodeError as e:
-                print(f"⚠️  解析available_agents失败: {e}")
+                print(f"[WARNING] 解析available_agents失败: {e}")
 
         # 执行agent
-        print(f"🚀 使用 {args.agent} 分析 {args.repo}#{args.issue}")
+        print(f"[START] 使用 {args.agent} 分析 {args.repo}#{args.issue}")
         results = asyncio.run(run_agents_parallel(args.issue, [args.agent], context, 0, available_agents))
 
         if args.agent not in results:
-            print(f"❌ Agent {args.agent} 执行失败")
+            print(f"[ERROR] Agent {args.agent} 执行失败")
             return 1
 
         result = results[args.agent]
@@ -449,7 +449,7 @@ def main():
                 gh_token = os.environ.get("GH_TOKEN", "")
                 if gh_token == os.environ.get("GITHUB_TOKEN", ""):
                     print(
-                        "\n⚠️  警告: 使用默认 GITHUB_TOKEN 可能无法跨仓库评论"
+                        "\n[WARNING] 警告: 使用默认 GITHUB_TOKEN 可能无法跨仓库评论"
                         "\n建议: 配置 PAT_TOKEN secret 以显示用户身份并获得完整权限"
                         "\n详见: agents/_template/agent.yml 中的 GitHub Token 配置说明\n"
                     )
@@ -460,18 +460,18 @@ def main():
                     capture_output=True,
                     text=True,
                 )
-                print(f"✅ 已发布到 {args.repo}#{args.issue}")
+                print(f"[OK] 已发布到 {args.repo}#{args.issue}")
             except subprocess.CalledProcessError as e:
                 error_msg = e.stderr if e.stderr else str(e)
-                print(f"❌ 发布失败: {error_msg}")
+                print(f"[ERROR] 发布失败: {error_msg}")
 
                 # 判断是否为权限问题
                 if "not accessible" in error_msg.lower() or "forbidden" in error_msg.lower():
                     print(
-                        "\n💡 这可能是权限问题！"
+                        "\n[INFO] 这可能是权限问题！"
                         "\n解决方法："
                         "\n1. 在你的 fork 仓库设置 PAT_TOKEN secret"
-                        "\n2. 创建 PAT: Settings → Developer settings → Personal access tokens"
+                        "\n2. 创建 PAT: Settings -> Developer settings -> Personal access tokens"
                         "\n3. 需要权限: repo (评论) + workflow (触发)"
                         "\n\n配置后，你的回复会显示为真实用户名，而非 bot\n"
                     )
@@ -484,11 +484,11 @@ def main():
                         escaped_response = response.replace("\n", "%0A").replace("\r", "%0D")
                         f.write(f"agent_response={escaped_response}\n")
                         f.write(f"comment_failed=true\n")
-                    print("📝 结果已保存到 GITHUB_OUTPUT，workflow可以处理")
+                    print("[INFO] 结果已保存到 GITHUB_OUTPUT，workflow可以处理")
 
                 return 1
             except Exception as e:
-                print(f"❌ 发布失败: {e}")
+                print(f"[ERROR] 发布失败: {e}")
                 return 1
 
     elif args.command == "list-agents":

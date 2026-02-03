@@ -135,7 +135,7 @@ def retry_on_failure(max_attempts: int = 3, delay: float = 2, backoff: float = 2
                         raise
 
                     print(
-                        f"⚠️ Attempt {attempt + 1}/{max_attempts} failed: {e}",
+                        f"[WARNING] Attempt {attempt + 1}/{max_attempts} failed: {e}",
                         file=sys.stderr,
                     )
                     print(f"   Retrying in {current_delay:.1f}s...", file=sys.stderr)
@@ -198,12 +198,12 @@ def get_installation_id(owner: str, repo: str, app_jwt: str) -> int | None:
         return data.get("id")
     except requests.exceptions.HTTPError as e:
         if response.status_code == 404:
-            print(f"⚠️ No installation found for {owner}/{repo}", file=sys.stderr)
+            print(f"[WARNING] No installation found for {owner}/{repo}", file=sys.stderr)
         else:
-            print(f"⚠️ Failed to get installation: {e}", file=sys.stderr)
+            print(f"[WARNING] Failed to get installation: {e}", file=sys.stderr)
         return None
     except Exception as e:
-        print(f"⚠️ Error getting installation: {e}", file=sys.stderr)
+        print(f"[WARNING] Error getting installation: {e}", file=sys.stderr)
         return None
 
 
@@ -231,7 +231,7 @@ def generate_installation_token(installation_id: int, app_jwt: str) -> str | Non
         data = response.json()
         return data.get("token")
     except Exception as e:
-        print(f"⚠️ Failed to generate installation token: {e}", file=sys.stderr)
+        print(f"[WARNING] Failed to generate installation token: {e}", file=sys.stderr)
         return None
 
 
@@ -291,7 +291,7 @@ def dispatch_event(
     try:
         response = requests.post(url, headers=headers, json=data, timeout=timeout)
         response.raise_for_status()
-        print(f"✓ Dispatched to {repository} (repository_dispatch)")
+        print(f"[OK] Dispatched to {repository} (repository_dispatch)")
         return True, ""
 
     except requests.exceptions.HTTPError as e:
@@ -300,28 +300,28 @@ def dispatch_event(
 
         # 403 错误特殊处理（fork 仓库限制）
         if status_code == 403:
-            print(f"✗ 403 Forbidden: Cannot dispatch to {repository}", file=sys.stderr)
+            print(f"[ERROR] 403 Forbidden: Cannot dispatch to {repository}", file=sys.stderr)
             if "fork" in repository.lower() or "personal access token" in error_msg.lower():
-                print("  💡 Suggestion: This may be a fork repository.", file=sys.stderr)
+                print("  [INFO] Suggestion: This may be a fork repository.", file=sys.stderr)
                 print(f"     Ask {repository.split('/')[0]} to configure workflow_dispatch mode.", file=sys.stderr)
             return False, "FORK_DISPATCH_NOT_ALLOWED"
 
         # 404 错误（仓库不存在或 workflow 未启用）
         elif status_code == 404:
-            print(f"✗ 404 Not Found: {repository}", file=sys.stderr)
+            print(f"[ERROR] 404 Not Found: {repository}", file=sys.stderr)
             print("  Repository not found or workflow not enabled", file=sys.stderr)
             return False, "REPOSITORY_NOT_FOUND"
 
         # 其他 HTTP 错误
         else:
-            print(f"✗ HTTP {status_code} error: {error_msg}", file=sys.stderr)
+            print(f"[ERROR] HTTP {status_code} error: {error_msg}", file=sys.stderr)
             return False, f"HTTP_{status_code}"
 
     except requests.exceptions.Timeout:
-        print(f"✗ Timeout dispatching to {repository}", file=sys.stderr)
+        print(f"[ERROR] Timeout dispatching to {repository}", file=sys.stderr)
         return False, "TIMEOUT"
     except requests.exceptions.RequestException as e:
-        print(f"✗ Failed to dispatch to {repository}: {e}", file=sys.stderr)
+        print(f"[ERROR] Failed to dispatch to {repository}: {e}", file=sys.stderr)
         return False, "UNKNOWN_ERROR"
 
 
@@ -370,7 +370,7 @@ def dispatch_workflow(
     try:
         response = requests.post(url, headers=headers, json=data, timeout=timeout)
         response.raise_for_status()
-        print(f"✓ Dispatched workflow to {repository} (workflow_dispatch)")
+        print(f"[OK] Dispatched workflow to {repository} (workflow_dispatch)")
         return True, ""
 
     except requests.exceptions.HTTPError as e:
@@ -379,26 +379,26 @@ def dispatch_workflow(
 
         # 404 错误（workflow 文件不存在或未配置 workflow_dispatch）
         if status_code == 404:
-            print(f"✗ 404 Not Found: {repository}/actions/workflows/{workflow_file}", file=sys.stderr)
+            print(f"[ERROR] 404 Not Found: {repository}/actions/workflows/{workflow_file}", file=sys.stderr)
             print("  Workflow file may not exist or workflow_dispatch not configured", file=sys.stderr)
             return False, "WORKFLOW_NOT_FOUND"
 
         # 403 错误（权限不足）
         elif status_code == 403:
-            print(f"✗ 403 Forbidden: Cannot trigger workflow in {repository}", file=sys.stderr)
+            print(f"[ERROR] 403 Forbidden: Cannot trigger workflow in {repository}", file=sys.stderr)
             print("  Token may lack 'workflow' permission", file=sys.stderr)
             return False, "WORKFLOW_PERMISSION_DENIED"
 
         # 其他 HTTP 错误
         else:
-            print(f"✗ HTTP {status_code} error: {error_msg}", file=sys.stderr)
+            print(f"[ERROR] HTTP {status_code} error: {error_msg}", file=sys.stderr)
             return False, f"HTTP_{status_code}"
 
     except requests.exceptions.Timeout:
-        print(f"✗ Timeout dispatching workflow to {repository}", file=sys.stderr)
+        print(f"[ERROR] Timeout dispatching workflow to {repository}", file=sys.stderr)
         return False, "TIMEOUT"
     except requests.exceptions.RequestException as e:
-        print(f"✗ Failed to dispatch workflow to {repository}: {e}", file=sys.stderr)
+        print(f"[ERROR] Failed to dispatch workflow to {repository}: {e}", file=sys.stderr)
         return False, "UNKNOWN_ERROR"
 
 
@@ -560,13 +560,13 @@ def main(argv: list[str] | None = None) -> int:
         workflow_file = config.get("workflow_file", "user_agent.yml")
 
         if not repository:
-            print(f"⚠️ {username} has no repository configured", file=sys.stderr)
+            print(f"[WARNING] {username} has no repository configured", file=sys.stderr)
             failed_agents.append({"username": username, "reason": "No repository configured"})
             continue
 
         # 跳过源仓库本身（避免自我 dispatch）
         if repository == args.source_repo:
-            print(f"⚠️ Skipping {username}: Cannot dispatch to source repository itself", file=sys.stderr)
+            print(f"[WARNING] Skipping {username}: Cannot dispatch to source repository itself", file=sys.stderr)
             continue
 
         # 添加用户特定信息
@@ -595,7 +595,7 @@ def main(argv: list[str] | None = None) -> int:
             app_id, private_key = github_app_credentials
             token = get_token_for_repository(repository, app_id, private_key)
             if not token:
-                print(f"⚠️ Failed to get token for {repository}", file=sys.stderr)
+                print(f"[WARNING] Failed to get token for {repository}", file=sys.stderr)
                 failed_agents.append(
                     {"username": username, "repository": repository, "error": "TOKEN_GENERATION_FAILED"}
                 )
@@ -618,10 +618,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # 输出详细结果
     print(f"\n{'=' * 60}")
-    print(f"✅ Successfully dispatched to {success_count}/{len(matched_configs)} agents")
+    print(f"[OK] Successfully dispatched to {success_count}/{len(matched_configs)} agents")
 
     if failed_agents:
-        print(f"❌ Failed agents ({len(failed_agents)}):")
+        print(f"[ERROR] Failed agents ({len(failed_agents)}):")
         for agent in failed_agents:
             username = agent["username"]
             error = agent.get("error", agent.get("reason", "Unknown"))

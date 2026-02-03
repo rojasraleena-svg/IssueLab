@@ -64,7 +64,7 @@ trigger_conditions:
 ```
 
 **Built-in Agents:**
-- `moderator` - Triages issues, checks information completeness
+- `moderator` - Reviews issues, checks information completeness
 - `reviewer_a` - Positive review: feasibility, contribution assessment
 - `reviewer_b` - Critical review: vulnerability identification
 - `summarizer` - Consensus extraction, action item generation

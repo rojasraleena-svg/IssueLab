@@ -33,7 +33,7 @@ def get_issue_content(issue_number: int, repo: str) -> dict[str, Any] | None:
         )
         return json.loads(result.stdout)
     except Exception as e:
-        logger.error(f"❌ 获取Issue #{issue_number}失败: {e}")
+        logger.error(f"[ERROR] 获取Issue #{issue_number}失败: {e}")
         return None
 
 
@@ -59,7 +59,7 @@ def check_already_commented(issue_number: int, repo: str, username: str) -> bool
         # 如果有输出，说明已经评论过
         return bool(result.stdout.strip())
     except Exception as e:
-        logger.warning(f"⚠️ 检查评论状态失败: {e}")
+        logger.warning(f"[WARNING] 检查评论状态失败: {e}")
         return False  # 默认未评论
 
 
@@ -173,7 +173,7 @@ def scan_issues_for_personal_agent(
 
         # 检查是否已经评论过
         if username and check_already_commented(issue_num, repo, username):
-            logger.info(f"⏭️  Issue #{issue_num} 已评论过，跳过")
+            logger.info(f"[SKIP] Issue #{issue_num} 已评论过，跳过")
             continue
 
         # 分析兴趣度
@@ -197,16 +197,16 @@ def scan_issues_for_personal_agent(
 
         if analysis["interested"]:
             logger.info(
-                f"✅ Issue #{issue_num}: {issue_data.get('title', '')} (优先级: {analysis['priority']})"
+                f"[OK] Issue #{issue_num}: {issue_data.get('title', '')} (优先级: {analysis['priority']})"
             )
         else:
-            logger.info(f"⏭️  Issue #{issue_num}: 不感兴趣 - {analysis['reason']}")
+            logger.info(f"[SKIP] Issue #{issue_num}: 不感兴趣 - {analysis['reason']}")
 
     # 选择top N
     selected = select_top_issues(candidates, max_replies)
     selected_numbers = [s["issue_number"] for s in selected]
 
-    logger.info(f"📊 总扫描: {len(candidates)}, 感兴趣: {len(selected)}")
+    logger.info(f"[INFO] 总扫描: {len(candidates)}, 感兴趣: {len(selected)}")
 
     return {
         "agent_name": agent_name,

@@ -24,7 +24,7 @@ trigger_conditions:
 
 | Issue 类型 | 特征 | 触发 Agent | 触发评论 |
 |-----------|------|-----------|---------|
-| **新论文** | 包含 arXiv 链接、论文模板 | moderator | `@Moderator 分诊` |
+| **新论文** | 包含 arXiv 链接、论文模板 | moderator | `@Moderator 请审核` |
 | **技术问题** | 包含问题描述、求助 | reviewer_a | `@ReviewerA 分析` |
 | **实验复现** | 包含实验步骤、结果 | reviewer_a + reviewer_b | `@ReviewerA @ReviewerB 评审` |
 | **讨论较多** | 评论数 > 3，需要总结 | summarizer | `@Summarizer 汇总` |
@@ -39,11 +39,11 @@ def analyze_issue(issue_title, issue_body, comments):
         return skip("已在处理中")
 
     if has_label("bot:quiet"):
-        return skip("静默模式")
+        return skip("安静模式")
 
     # 2. 分析 Issue 类型
     if is_paper_template(issue_body):
-        return trigger("moderator", "论文模板，触发分诊")
+        return trigger("moderator", "论文模板，触发审核")
 
     if "arxiv.org" in issue_body or "arxiv.org" in comments:
         return trigger("moderator", "包含论文链接")
@@ -73,10 +73,10 @@ should_trigger: true  # 或 false
 agent: moderator  # 要触发的 Agent 名称
 
 comment: |
-  @Moderator 请分诊这篇论文
+  @Moderator 请审核这篇论文
 
 reason: |
-  Issue #1 包含论文模板和 arXiv 链接，需要分诊决定后续评审流程
+  Issue #1 包含论文模板和 arXiv 链接，需要审核决定后续评审流程
 ```
 
 ### 当不需要触发时

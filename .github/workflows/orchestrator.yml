@@ -478,7 +478,7 @@ jobs:
       - name: Request close confirmation
         if: steps.extract.outputs.command == '/close'
         run: |
-          echo "🔐 收到关闭 Issue 请求，需要确认..."
+          echo "[INFO] 收到关闭 Issue 请求，需要确认..."
 
           # 添加待关闭标签
           gh issue edit ${{ github.event.issue.number }} \
@@ -489,9 +489,9 @@ jobs:
           gh issue comment ${{ github.event.issue.number }} \
             --repo ${{ github.repository }} \
             --body - <<-EOF
-            ## 🔒 关闭确认
+            ## 关闭确认
 
-            此 Issue 即将被关闭。请回复 \*\*/confirm-close\*\* 以确认关闭，或任意回复以取消。
+            此 Issue 即将被关闭。请回复 **/confirm-close** 以确认关闭，或任意回复以取消。
 
             > 由 @${{ github.event.comment.user.login }} 发起关闭请求
             EOF
@@ -501,7 +501,7 @@ jobs:
       - name: Confirm and close issue
         if: steps.extract.outputs.command == '/confirm-close'
         run: |
-          echo "✅ 确认关闭 Issue..."
+          echo "[OK] 确认关闭 Issue..."
 
           # 移除待关闭标签
           gh issue edit ${{ github.event.issue.number }} \
@@ -516,7 +516,7 @@ jobs:
           # 评论确认
           gh issue comment ${{ github.event.issue.number }} \
             --repo ${{ github.repository }} \
-            --body "✅ Issue 已由 @${{ github.event.comment.user.login }} 手动关闭"
+            --body "[OK] Issue 已由 @${{ github.event.comment.user.login }} 手动关闭"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -589,7 +589,7 @@ jobs:
           LABEL="${{ github.event.label.name }}"
           AGENT_NAME="${LABEL#bot:trigger-}"
           echo "agent_name=${AGENT_NAME}" >> $GITHUB_OUTPUT
-          echo "🎯 将执行agent: ${AGENT_NAME}"
+          echo "[INFO] 将执行agent: ${AGENT_NAME}"
 
       - name: Execute triggered agent
         run: |
