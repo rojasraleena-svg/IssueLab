@@ -70,7 +70,9 @@ def write_issue_context_file(
     comment_count: int | None = None,
 ) -> str:
     """写入 Issue 上下文到临时文件，返回文件路径。"""
-    path = f"/tmp/issuelab_issue_{issue_number}.md"
+    base_dir = os.path.join(os.getcwd(), ".issuelab")
+    os.makedirs(base_dir, exist_ok=True)
+    path = os.path.join(base_dir, f"issue_{issue_number}.md")
 
     lines = [f"# Issue {issue_number}", ""]
     if title:
