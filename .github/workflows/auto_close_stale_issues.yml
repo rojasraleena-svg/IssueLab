@@ -1,0 +1,74 @@
+name: Auto-Close Stale Issues
+
+on:
+  schedule:
+    # 每天凌晨 2 点运行
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no changes)'
+        required: false
+        default: 'true'
+        type: boolean
+
+permissions:
+  issues: write
+
+jobs:
+  close-stale-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close issues with >200 comments
+        run: |
+          # 配置
+          MAX_COMMENTS=200
+          DRY_RUN=${{ github.event.inputs.dry_run || 'true' }}
+          REPO="${{ github.repository }}"
+
+          echo "🔍 检查超过 $MAX_COMMENTS 回复的 issue..."
+          echo "📊 仓库: $REPO"
+          echo "🔬 模式: $([ "$DRY_RUN" = "true" ] && echo "干运行" || echo "实际执行")"
+          echo ""
+
+          # 获取超过 200 回复的 open issue
+          # GitHub GraphQL API 不直接支持按评论数过滤，用搜索 API
+          # search API: comments:>200 匹配评论数
+          ISSUES=$(gh issue list \
+            --state open \
+            --limit 300 \
+            --json number,title,commentsCount \
+            --jq ".[] | select(.commentsCount > $MAX_COMMENTS) | .number")
+
+          if [ -z "$ISSUES" ]; then
+            echo "✅ 没有需要关闭的 issue"
+            exit 0
+          fi
+
+          COUNT=$(echo "$ISSUES" | wc -l)
+          echo "⚠️  发现 $COUNT 个需要关闭的 issue:"
+          echo ""
+
+          for issue_num in $ISSUES; do
+            TITLE=$(gh issue view $issue_num --json title --jq '.title')
+            COMMENTS=$(gh issue view $issue_num --json comments --jq '.comments')
+
+            echo "  #$issue_num: $TITLE"
+            echo "     回复数: $COMMENTS"
+
+            if [ "$DRY_RUN" = "false" ]; then
+              # 添加关闭原因标签并关闭
+              gh issue close $issue_num \
+                --comment "🤖 此 issue 已超过 $MAX_COMMENTS 回复，自动关闭。如需继续讨论，请开启新 issue。"
+              echo "     → 已关闭"
+            else
+              echo "     → [干运行] 将被关闭"
+            fi
+            echo ""
+          done
+
+          if [ "$DRY_RUN" = "false" ]; then
+            echo "✅ 完成：关闭了 $COUNT 个 issue"
+          else
+            echo "ℹ️  干运行完成：$COUNT 个 issue 将被关闭"
+          fi
