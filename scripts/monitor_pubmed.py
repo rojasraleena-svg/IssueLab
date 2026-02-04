@@ -487,7 +487,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--token", type=str, help="GitHub Token")
     parser.add_argument("--repo", type=str, help="Repository (owner/repo)")
     parser.add_argument(
-        "--query", type=str, default='"Speciation"[Mesh] OR "Hybridization, Genetic"[Mesh] OR "Genetic Introgression"[Mesh]', help="PubMed 检索词"
+        "--query", type=str, default='"Speciation"[Mesh] OR "Hybridization, Genetic"[Mesh] OR "Genetic Introgression"[Mesh] OR "Reproductive Isolation"[Mesh] OR "Gene Flow"[Mesh] OR (speciation[Title/Abstract] AND species[Title/Abstract]) OR ("lineage sorting"[Title/Abstract]) OR ("adaptive radiation"[Title/Abstract]) OR ("incipient species"[Title/Abstract])', help="PubMed 检索词"
     )
     parser.add_argument("--days", type=int, default=1, help="追溯天数（默认: 1，即最近 1 天）")
     parser.add_argument("--max-papers", type=int, default=10, help="获取文献数量（分析前，默认: 10）")
