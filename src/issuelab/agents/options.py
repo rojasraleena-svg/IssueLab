@@ -70,6 +70,7 @@ def _create_agent_options_impl(
         max_budget_usd=max_budget_usd if max_budget_usd is not None else AgentConfig().max_budget_usd,
         setting_sources=["user", "project"],
         env=env,
+        permission_mode="bypassPermissions",
         stderr=sdk_stderr_handler,  # 捕获 SDK 内部详细日志
     )
 
