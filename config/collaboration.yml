@@ -14,13 +14,13 @@ collaboration:
 
     ## 协作指南
 
-    如需其他专家参与讨论，可以使用 @mentions：
+    如需其他专家参与讨论，请在 YAML 中使用 mentions 字段（不要在正文里写 @mentions）：
 
     **可用专家**：
     {available_agents}
 
     **说明**：
-    - @mentions 会自动触发对应 agent 参与讨论
+    - mentions 会自动触发对应 agent 参与讨论
     - 系统会自动过滤不合适的 @mentions（如系统账号）
     - 建议在需要特定领域专业意见时使用
     - 被 @ 的 agent 会收到通知并参与后续讨论

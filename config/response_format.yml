@@ -27,5 +27,6 @@ rules:
   yaml_required: true
 
 notes:
-  - mentions is an optional list of GitHub usernames (without @). Use it only when explicit notification is needed.
+  - mentions is required when you want to notify others; it must be a list of GitHub usernames (without @).
+  - do not use @mentions in the free-text body; use the mentions field instead.
   - observer should include decision fields in YAML: analysis, should_trigger, reason, agent, comment.
