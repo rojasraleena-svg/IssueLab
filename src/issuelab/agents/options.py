@@ -420,10 +420,30 @@ def _create_agent_options_impl(
     if os.environ.get("MCP_LOG_DETAIL") == "1":
         logger.debug("Allowed tools for agent '%s': %s", agent_name or "default", allowed_tools)
 
+    output_format_rules = (
+        "Output must follow this exact template:\n"
+        "[Agent: <name>]\n"
+        "## Summary (<=20 chars, single sentence)\n"
+        "## Key Findings (exactly 3 bullets, each <=25 chars)\n"
+        "## Recommended Actions (max 2 bullets, each <=30 chars; @mentions allowed only here)\n"
+        "## Structured (YAML)\n"
+        "```yaml\n"
+        'summary: "..."\n'
+        "findings:\n"
+        '  - "..."\n'
+        "recommendations:\n"
+        '  - "..."\n'
+        'confidence: "high|medium|low"\n'
+        "```\n"
+        "Rules: YAML content must match the sections above; no extra sections; no code blocks other than YAML; "
+        "no @mentions outside Recommended Actions."
+    )
+
     return ClaudeAgentOptions(
         agents=agent_definitions,
         max_turns=max_turns if max_turns is not None else AgentConfig().max_turns,
         max_budget_usd=max_budget_usd if max_budget_usd is not None else AgentConfig().max_budget_usd,
+        system_prompt={"type": "preset", "preset": "claude_code", "append": output_format_rules},
         setting_sources=["user", "project"],
         env=env,
         permission_mode="bypassPermissions",

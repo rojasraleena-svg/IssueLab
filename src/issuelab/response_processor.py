@@ -8,8 +8,11 @@ Agent Response 后处理：解析 @mentions 并触发 dispatch
 
 import logging
 import os
+import re
 import subprocess
 from typing import Any
+
+import yaml
 
 from issuelab.mention_policy import (
     build_mention_section,
@@ -30,6 +33,130 @@ __all__ = [
     "should_auto_close",
     "close_issue",
 ]
+
+
+_SUMMARY_MARKER = "## Summary"
+_FINDINGS_MARKER = "## Key Findings"
+_ACTIONS_MARKER = "## Recommended Actions"
+_YAML_MARKER = "## Structured (YAML)"
+
+
+def _truncate_text(text: str, limit: int) -> str:
+    text = " ".join(text.split())
+    if limit <= 0:
+        return ""
+    if len(text) <= limit:
+        return text
+    return text[:limit]
+
+
+def _strip_mentions(text: str) -> str:
+    return re.sub(r"@([A-Za-z0-9_-]+)", r"用户 \1", text)
+
+
+def _extract_yaml_block(text: str) -> str:
+    match = re.search(r"```yaml(.*?)```", text, re.DOTALL | re.IGNORECASE)
+    return match.group(1).strip() if match else ""
+
+
+def _normalize_agent_output(response_text: str, agent_name: str) -> tuple[str, list[str]]:
+    warnings: list[str] = []
+    if _SUMMARY_MARKER not in response_text:
+        return response_text, warnings
+
+    markers = [_SUMMARY_MARKER, _FINDINGS_MARKER, _ACTIONS_MARKER, _YAML_MARKER]
+    positions = {marker: response_text.find(marker) for marker in markers}
+    missing = [marker for marker, pos in positions.items() if pos == -1]
+    if missing:
+        warnings.append(f"Missing sections: {', '.join(missing)}")
+        return response_text, warnings
+
+    summary_block = response_text[
+        positions[_SUMMARY_MARKER] + len(_SUMMARY_MARKER) : positions[_FINDINGS_MARKER]
+    ].strip()
+    findings_block = response_text[
+        positions[_FINDINGS_MARKER] + len(_FINDINGS_MARKER) : positions[_ACTIONS_MARKER]
+    ].strip()
+    actions_block = response_text[positions[_ACTIONS_MARKER] + len(_ACTIONS_MARKER) : positions[_YAML_MARKER]].strip()
+    yaml_block = response_text[positions[_YAML_MARKER] + len(_YAML_MARKER) :].strip()
+
+    summary_line = ""
+    for line in summary_block.splitlines():
+        if line.strip():
+            summary_line = line.strip()
+            break
+    if not summary_line:
+        warnings.append("Summary is empty")
+    summary_line = _strip_mentions(summary_line)
+    summary_line = _truncate_text(summary_line, 20)
+
+    findings: list[str] = []
+    for line in findings_block.splitlines():
+        match = re.match(r"^\s*[-*]\s+(.*)", line)
+        if match:
+            findings.append(match.group(1).strip())
+    if not findings:
+        warnings.append("Key Findings missing bullets")
+    findings = [_truncate_text(_strip_mentions(item), 25) for item in findings[:3]]
+    if len(findings) < 3:
+        warnings.append("Key Findings fewer than 3 bullets")
+
+    actions: list[str] = []
+    for line in actions_block.splitlines():
+        match = re.match(r"^\s*[-*]\s+(.*)", line)
+        if match:
+            actions.append(match.group(1).strip())
+    if not actions:
+        warnings.append("Recommended Actions missing bullets")
+    actions = [_truncate_text(item, 30) for item in actions[:2]]
+    if len(actions) > 2:
+        warnings.append("Recommended Actions truncated to 2 bullets")
+
+    confidence = "medium"
+    yaml_text = _extract_yaml_block(yaml_block)
+    if yaml_text:
+        try:
+            parsed = yaml.safe_load(yaml_text)
+        except Exception:
+            parsed = None
+        if isinstance(parsed, dict):
+            parsed_confidence = str(parsed.get("confidence", "")).lower()
+            if parsed_confidence in {"high", "medium", "low"}:
+                confidence = parsed_confidence
+
+    def _yaml_escape(value: str) -> str:
+        return value.replace('"', '\\"')
+
+    yaml_lines = [
+        "```yaml",
+        f'summary: "{_yaml_escape(summary_line)}"',
+        "findings:",
+    ]
+    for item in findings:
+        yaml_lines.append(f'  - "{_yaml_escape(item)}"')
+    yaml_lines.append("recommendations:")
+    for item in actions:
+        yaml_lines.append(f'  - "{_yaml_escape(item)}"')
+    yaml_lines.append(f'confidence: "{confidence}"')
+    yaml_lines.append("```")
+
+    normalized = [
+        f"[Agent: {agent_name}]",
+        "",
+        _SUMMARY_MARKER,
+        summary_line or "(missing)",
+        "",
+        _FINDINGS_MARKER,
+        *(f"- {item}" for item in findings),
+        "",
+        _ACTIONS_MARKER,
+        *(f"- [ ] {item}" for item in actions),
+        "",
+        _YAML_MARKER,
+        *yaml_lines,
+    ]
+
+    return "\n".join(normalized).rstrip() + "\n", warnings
 
 
 def trigger_mentioned_agents(
@@ -131,6 +258,12 @@ def process_agent_response(
     """
     # 提取response文本
     response_text = response.get("response", str(response)) if isinstance(response, dict) else str(response)
+    raw_response_text = response_text
+
+    normalized_response, format_warnings = _normalize_agent_output(response_text, agent_name)
+    if format_warnings:
+        logger.warning("Response format warnings for '%s': %s", agent_name, "; ".join(format_warnings))
+    response_text = normalized_response
 
     # 提取所有 @mentions
     mentions = extract_mentions(response_text)
@@ -141,11 +274,13 @@ def process_agent_response(
     result: dict[str, Any] = {
         "agent_name": agent_name,
         "response": response_text,
+        "raw_response": raw_response_text,
         "clean_response": clean_response,
         "mentions": mentions,
         "allowed_mentions": [],
         "filtered_mentions": [],
         "dispatch_results": {},
+        "format_warnings": format_warnings,
     }
 
     # 自动触发被@的agents
