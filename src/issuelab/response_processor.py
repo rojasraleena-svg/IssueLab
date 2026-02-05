@@ -12,77 +12,13 @@ import subprocess
 from typing import Any, Literal, overload
 
 from issuelab.mention_policy import (
-    build_mention_section as _build_mention_section,
-    clean_mentions_in_text as _clean_mentions_in_text,
-    extract_mentions as _extract_mentions,
+    build_mention_section,
+    clean_mentions_in_text,
+    extract_mentions,
     filter_mentions,
 )
 
 logger = logging.getLogger(__name__)
-
-
-def extract_mentions(text: str) -> list[str]:
-    """
-    从文本中提取所有@mentions
-
-    Args:
-        text: 文本内容
-
-    Returns:
-        被@的用户名列表（去重）
-
-    Examples:
-        >>> extract_mentions("Hi @alice and @bob")
-        ['alice', 'bob']
-        >>> extract_mentions("@gqy22 please review")
-        ['gqy22']
-        >>> extract_mentions("No mentions here")
-        []
-    """
-    return _extract_mentions(text)
-
-
-def clean_mentions_in_text(text: str, replacement: str = "用户 {username}") -> str:
-    """清理文本中的所有 @mentions
-
-    将文本中的 @username 替换为指定格式，默认替换为 "用户 username"
-
-    Args:
-        text: 原始文本
-        replacement: 替换格式，可使用 {username} 占位符
-
-    Returns:
-        清理后的文本
-
-    Examples:
-        >>> clean_mentions_in_text("建议 @gqy20 确认设计")
-        '建议用户 gqy20 确认设计'
-        >>> clean_mentions_in_text("建议 @gqy20 确认", "{username}")
-        '建议 gqy20 确认'
-    """
-    return _clean_mentions_in_text(text, replacement=replacement)
-
-
-def build_mention_section(mentions: list[str], format_type: str = "labeled") -> str:
-    """构建 @ 区域
-
-    Args:
-        mentions: @mentions 列表
-        format_type: 格式类型
-            - labeled: "---\n相关人员: @user1 @user2"
-            - simple: "---\n@user1 @user2"
-            - list: "---\n协作请求:\n- @user1\n- @user2"
-
-    Returns:
-        @ 区域文本（如果 mentions 为空则返回空字符串）
-
-    Examples:
-        >>> build_mention_section(['gqy20', 'gqy22'])
-        '---\n相关人员: @gqy20 @gqy22'
-        >>> build_mention_section(['gqy20'], 'simple')
-        '---\n@gqy20'
-    """
-    return _build_mention_section(mentions, format_type=format_type)
 
 
 @overload

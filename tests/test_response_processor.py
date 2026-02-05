@@ -76,6 +76,19 @@ class TestExtractMentions:
         assert extract_mentions(text) == ["alice"]
 
 
+class TestMentionExports:
+    """确保 mention 工具函数集中于 mention_policy"""
+
+    def test_response_processor_exports_mention_policy_helpers(self):
+        """response_processor 应直接复用 mention_policy 的实现"""
+        from issuelab import mention_policy
+        from issuelab import response_processor
+
+        assert response_processor.extract_mentions is mention_policy.extract_mentions
+        assert response_processor.clean_mentions_in_text is mention_policy.clean_mentions_in_text
+        assert response_processor.build_mention_section is mention_policy.build_mention_section
+
+
 class TestTriggerMentionedAgents:
     """测试触发被@的agents"""
 

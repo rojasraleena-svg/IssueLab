@@ -158,8 +158,7 @@ def post_comment(
 
     # 自动清理和过滤 @mentions（集中式管理的核心）
     if mentions is None and auto_clean:
-        from issuelab.mention_policy import filter_mentions, rank_mentions_by_frequency
-        from issuelab.response_processor import clean_mentions_in_text
+        from issuelab.mention_policy import clean_mentions_in_text, filter_mentions, rank_mentions_by_frequency
 
         # 1. 提取所有 @mentions
         all_mentions = rank_mentions_by_frequency(body)
@@ -183,7 +182,7 @@ def post_comment(
 
     # 拼接 @ 区域
     if mentions:
-        from issuelab.response_processor import build_mention_section
+        from issuelab.mention_policy import build_mention_section
 
         mention_section = build_mention_section(mentions, format_type="labeled")
         final_body = f"{body}\n\n{mention_section}"
