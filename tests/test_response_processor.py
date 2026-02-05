@@ -181,8 +181,8 @@ confidence: "high"
 ```"""
         results, allowed, filtered = trigger_mentioned_agents(response, 1, "Title", "Body")
 
-        assert results == {"alice": False}
-        assert allowed == ["alice"]
+        assert results == {"reviewer_a": False}
+        assert allowed == ["reviewer_a"]
         assert filtered == []
 
 
@@ -194,7 +194,7 @@ class TestProcessAgentResponse:
         """处理字符串response"""
         from issuelab.response_processor import process_agent_response
 
-        mock_trigger.return_value = ({"alice": True}, ["alice"], [])
+        mock_trigger.return_value = ({"reviewer_a": True}, ["reviewer_a"], [])
 
         result = process_agent_response(
             agent_name="moderator",
