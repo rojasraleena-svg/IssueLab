@@ -98,6 +98,7 @@ jobs:
           LOG_FILE: ${{ github.workspace }}/logs/user_agent_${{ inputs.issue_number }}.log
           LOG_LEVEL: DEBUG
           CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
+          MCP_LOG_DETAIL: "1"
         run: |
           echo "Running agent for: ${{ steps.agent.outputs.username }}"
           echo "Source Issue: ${{ inputs.source_repo }}#${{ inputs.issue_number }}"
