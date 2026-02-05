@@ -124,6 +124,18 @@ uv sync
 
 ---
 
+## MCP 配置（可选）
+
+IssueLab 支持 MCP 工具扩展，支持**全局**与**按 Agent 覆盖**：
+
+- 全局配置：`./.mcp.json`
+- Agent 配置：`./agents/<your_github_id>/.mcp.json`
+- 合并规则：先加载全局，再用 Agent 配置覆盖同名 server
+- 模板参考：`agents/_template/.mcp.json`
+- 提示词注入：在 `prompt.md` 中加入 `{mcp_servers}` 占位符可显示当前加载的 MCP 列表
+
+---
+
 ## 文档
 
 | 文档 | 内容 |
