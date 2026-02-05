@@ -124,8 +124,12 @@ jobs:
           # 将多行内容写入临时文件，避免命令行参数解析问题
           ISSUE_BODY_FILE=$(mktemp)
           COMMENT_BODY_FILE=$(mktemp)
-          echo -n "${{ github.event.issue.body }}" > "$ISSUE_BODY_FILE"
-          echo -n "${{ github.event.comment.body }}" > "$COMMENT_BODY_FILE"
+          cat <<'EOF' > "$ISSUE_BODY_FILE"
+${{ github.event.issue.body }}
+EOF
+          cat <<'EOF' > "$COMMENT_BODY_FILE"
+${{ github.event.comment.body }}
+EOF
 
           python -m issuelab.cli.dispatch \
             --mentions "$mentions" \
@@ -138,7 +142,8 @@ jobs:
             --comment-body-file "$COMMENT_BODY_FILE" \
             --labels '${{ steps.labels.outputs.labels }}' \
             --available-agents '${{ steps.collect_agents.outputs.agents }}' \
-            --use-github-app
+            --app-id "$GITHUB_APP_ID" \
+            --app-private-key "$GITHUB_APP_PRIVATE_KEY"
 
           # 清理临时文件
           rm -f "$ISSUE_BODY_FILE" "$COMMENT_BODY_FILE"
