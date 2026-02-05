@@ -11,6 +11,7 @@ from issuelab.agents.executor import run_agents_parallel
 from issuelab.agents.observer import run_observer
 from issuelab.config import Config
 from issuelab.logging_config import get_logger, setup_logging
+from issuelab.tools import github as github_tools
 from issuelab.tools.github import get_issue_info, post_comment
 
 # 初始化日志
@@ -244,31 +245,14 @@ def main():
         issue_data_list = []
         for issue_num in issue_numbers:
             try:
-                # 使用 gh 命令获取 Issue 详情
-                result = subprocess.run(
-                    ["gh", "issue", "view", str(issue_num), "--json", "title,body,comments"],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
+                data = get_issue_info(issue_num, format_comments=True)
 
-                data = json.loads(result.stdout)
-
-                # 格式化评论
-                comments = []
-                for comment in data.get("comments", []):
-                    author = comment.get("author", {}).get("login", "unknown")
-                    body = comment.get("body", "")
-                    comments.append(f"- **[{author}]**: {body}")
-
-                from issuelab.tools.github import write_issue_context_file
-
-                issue_file = write_issue_context_file(
+                issue_file = github_tools.write_issue_context_file(
                     issue_number=issue_num,
                     title=data.get("title", ""),
                     body=data.get("body", ""),
-                    comments="\n".join(comments),
-                    comment_count=len(comments),
+                    comments=data.get("comments", ""),
+                    comment_count=data.get("comment_count", 0),
                 )
 
                 issue_data_list.append(
