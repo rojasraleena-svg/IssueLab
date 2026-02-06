@@ -9,13 +9,41 @@ interests:
   - "agent systems"
   - "AI development"
   - "research tooling"
+  - "llm reasoning and alignment"
+  - "rag and retrieval systems"
+  - "software architecture"
+  - "testing and ci/cd"
+  - "observability and reliability"
+  - "data engineering and knowledge systems"
+  - "security and governance"
+  - "human-computer interaction"
+  - "research methodology"
+  - "cross-domain ai applications"
+  - "healthcare and biomedical ai"
+  - "education and learning systems"
+  - "finance and risk analytics"
+  - "manufacturing and industrial intelligence"
+  - "robotics and autonomous systems"
+  - "agriculture and food systems"
+  - "climate and environmental informatics"
+  - "geospatial and remote sensing"
+  - "social science and policy modeling"
+  - "legal and compliance tech"
+  - "public sector and govtech"
+  - "media and creative ai"
+  - "cybersecurity operations"
+  - "supply chain and logistics optimization"
+  - "energy and smart grid systems"
+  - "life sciences and drug discovery"
+  - "digital humanities"
+  - "multimodal ai applications"
 
 # 智能体描述
-description: "我的科研分身，专注于智能体系统设计与开发，擅长 Agent 架构、工具集成、系统评审"
+description: "我的科研分身，主轴是智能体系统设计与开发，同时覆盖 LLM 推理、工程质量、数据系统、安全治理与跨领域应用评审"
 
 # 运行配置
 enabled: true
-max_turns: 100
+max_turns: 200
 max_budget_usd: 20.00
 timeout_seconds: 420
 
