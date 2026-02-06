@@ -190,6 +190,33 @@ class TestMcpConfigLoading:
             servers = load_mcp_servers_for_agent("any", root_dir=tmp_root)
             assert servers == {}
 
+    def test_mcp_env_alias_resolves_from_process_env(self, tmp_path: Path, monkeypatch):
+        """MCP env 值可引用进程环境变量名（如 ANTHROPIC_AUTH_TOKEN）"""
+        monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "token-from-anthropic-env")
+        agent_dir = tmp_path / "agents" / "video_manim"
+        agent_dir.mkdir(parents=True)
+        (agent_dir / ".mcp.json").write_text(
+            json.dumps(
+                {
+                    "mcpServers": {
+                        "MiniMax": {
+                            "command": "uvx",
+                            "args": ["minimax-coding-plan-mcp", "-y"],
+                            "env": {
+                                "MINIMAX_API_KEY": "ANTHROPIC_AUTH_TOKEN",
+                                "MINIMAX_API_HOST": "https://api.minimaxi.com",
+                            },
+                        }
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        servers = load_mcp_servers_for_agent("video_manim", root_dir=tmp_path)
+        assert servers["MiniMax"]["env"]["MINIMAX_API_KEY"] == "token-from-anthropic-env"
+        assert servers["MiniMax"]["env"]["MINIMAX_API_HOST"] == "https://api.minimaxi.com"
+
     def test_mcp_log_tools_triggers_listing(self):
         """MCP_LOG_TOOLS=1 时应触发工具列表逻辑"""
         clear_agent_options_cache()

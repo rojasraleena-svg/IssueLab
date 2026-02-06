@@ -129,6 +129,48 @@ def _read_mcp_servers_from_file(path: Path) -> dict[str, Any]:
     return servers
 
 
+def _resolve_mcp_server_env(servers: dict[str, Any]) -> dict[str, Any]:
+    """解析 MCP server env 中的环境变量别名。
+
+    规则（按顺序）：
+    1. 若值形如 "${ENV_NAME}"，替换为 os.environ["ENV_NAME"]（存在时）。
+    2. 若值本身就是某个环境变量名（例如 "ANTHROPIC_AUTH_TOKEN"），替换为其值（存在时）。
+    3. 其他值保持不变。
+    """
+    resolved = dict(servers)
+    for server_name, cfg in list(resolved.items()):
+        if not isinstance(cfg, dict):
+            continue
+        env_cfg = cfg.get("env")
+        if not isinstance(env_cfg, dict):
+            continue
+
+        new_env: dict[str, Any] = {}
+        for key, raw_value in env_cfg.items():
+            if not isinstance(raw_value, str):
+                new_env[key] = raw_value
+                continue
+
+            value = raw_value.strip()
+            match = re.fullmatch(r"\$\{([A-Z0-9_]+)\}", value)
+            if match:
+                env_name = match.group(1)
+                new_env[key] = os.environ.get(env_name, raw_value)
+                continue
+
+            if re.fullmatch(r"[A-Z0-9_]+", value) and value in os.environ:
+                new_env[key] = os.environ[value]
+                continue
+
+            new_env[key] = raw_value
+
+        cfg_copy = dict(cfg)
+        cfg_copy["env"] = new_env
+        resolved[server_name] = cfg_copy
+
+    return resolved
+
+
 def _read_text_with_timeout(path: Path) -> str:
     """读取文件内容（带超时）"""
     timeout_ms = int(os.environ.get("MCP_CONFIG_LOAD_TIMEOUT_MS", "3000"))
@@ -160,7 +202,7 @@ def load_mcp_servers_for_agent(agent_name: str | None, root_dir: Path | None = N
     if agent_name:
         servers.update(_read_mcp_servers_from_file(root / "agents" / agent_name / ".mcp.json"))
 
-    return servers
+    return _resolve_mcp_server_env(servers)
 
 
 def format_mcp_servers_for_prompt(agent_name: str | None, root_dir: Path | None = None) -> str:

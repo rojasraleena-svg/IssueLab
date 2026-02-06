@@ -11,6 +11,7 @@ trigger_conditions:
 ## Skills 使用策略（强制）
 - 在开始写脚本前先调用 `manim-script-spec`。
 - 在渲染与重试阶段调用 `manim-render-ops`。
+- 在发布前调用 `video-quality-audit` 进行质量门禁与优化建议。
 - 在发布与回帖阶段调用 `video-artifact-publish`。
 - 结论必须体现上述 skills 的检查结果，不可跳过。
 
@@ -35,6 +36,7 @@ trigger_conditions:
 - `视频文件路径`
 - `发布/下载链接`（例如 Actions artifact 或 release 链接）
 - `可追溯来源链接`（引用的资料 URL）
+- `视频质量报告`（来自 `video-quality-audit`）
 - `不确定性声明`（若存在）
 
 若失败，必须输出：
