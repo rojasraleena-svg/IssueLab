@@ -26,6 +26,7 @@ AGENT_NAMES: dict[str, str] = {
     "test": "test",
     "arxiv_observer": "arxiv_observer",
     "pubmed_observer": "pubmed_observer",
+    "video_manim": "video_manim",
 }
 
 BUILTIN_AGENTS: set[str] = {
@@ -37,6 +38,7 @@ BUILTIN_AGENTS: set[str] = {
     "observer",
     "arxiv_observer",
     "pubmed_observer",
+    "video_manim",
 }
 
 

@@ -108,6 +108,7 @@ jobs:
             ["arxiv_observer"]="arxiv_observer"
             ["echo"]="echo"
             ["test"]="test"
+            ["video_manim"]="video_manim"
           )
 
           # 查找匹配的内置 Agent（不区分大小写）
@@ -390,6 +391,75 @@ jobs:
           name: echo-logs-${{ github.event.issue.number }}
           path: logs/
           retention-days: 7
+
+  run-video-manim:
+    needs: detect-mentions
+    if: needs.detect-mentions.outputs.has_builtin == 'true' && contains(needs.detect-mentions.outputs.agents, 'video_manim')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: '3.13'
+          enable-cache: true
+      - run: uv sync
+
+      - name: Install manim runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libcairo2-dev libpango1.0-dev pkg-config
+          uv pip install manim==0.19.0
+
+      - name: Run video_manim agent
+        run: |
+          mkdir -p outputs/manim
+          uv run python -m issuelab execute \
+            --issue ${{ github.event.issue.number }} \
+            --agents video_manim \
+            --post
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL || 'https://api.minimaxi.com/anthropic' }}
+          ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL || 'MiniMax-M2.1' }}
+          LOG_FILE: ${{ github.workspace }}/logs/video_manim_${{ github.event.issue.number }}.log
+          LOG_LEVEL: DEBUG
+          CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK: "true"
+          CLAUDE_CODE_STREAM_CLOSE_TIMEOUT: "30000"
+          ACTIONS_STEP_DEBUG: "true"
+          ACTIONS_RUNNER_DEBUG: "true"
+          MCP_LOG_DETAIL: "1"
+          PROMPT_LOG: "1"
+          ISSUELAB_TRIGGER_COMMENT: ${{ github.event.comment.body }}
+
+      - name: Upload video outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-manim-outputs-${{ github.event.issue.number }}-${{ github.run_id }}
+          path: |
+            outputs/manim/**
+            media/videos/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-manim-logs-${{ github.event.issue.number }}
+          path: logs/
+          retention-days: 14
+
+      - name: Comment artifact link
+        if: always()
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --repo ${{ github.repository }} \
+            --body "🎬 video_manim 已执行完成。请在本次 workflow 的 Artifacts 查看视频与脚本：https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
 
   # ========== /command 触发（/review, /quiet, /close, /confirm-close） ==========
   process-command:

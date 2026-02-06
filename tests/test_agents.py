@@ -16,6 +16,7 @@ def test_agent_name_mapping():
     assert AGENT_NAMES["reviewer_a"] == "reviewer_a"
     assert AGENT_NAMES["reviewer_b"] == "reviewer_b"
     assert AGENT_NAMES["summarizer"] == "summarizer"
+    assert AGENT_NAMES["video_manim"] == "video_manim"
     assert "mod" not in AGENT_NAMES
     assert "reviewer" not in AGENT_NAMES
     assert "revb" not in AGENT_NAMES
@@ -112,6 +113,7 @@ def test_get_available_agents():
     assert "reviewer_b" in agents
     assert "summarizer" in agents
     assert "observer" in agents
+    assert "video_manim" in agents
     assert len(agents) >= 5
 
 

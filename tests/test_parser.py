@@ -20,6 +20,7 @@ def test_parse_name_mappings():
     assert AGENT_NAMES["moderator"] == "moderator"
     assert AGENT_NAMES["reviewer_a"] == "reviewer_a"
     assert AGENT_NAMES["reviewer_b"] == "reviewer_b"
+    assert AGENT_NAMES["video_manim"] == "video_manim"
     assert "mod" not in AGENT_NAMES
     assert "reva" not in AGENT_NAMES
     assert "revb" not in AGENT_NAMES

@@ -35,6 +35,7 @@ def test_create_agent_options_has_agents():
     assert "reviewer_a" in options.agents
     assert "reviewer_b" in options.agents
     assert "summarizer" in options.agents
+    assert "video_manim" in options.agents
     # observer 不在此列表中（单独处理）
     assert "observer" not in options.agents
 
