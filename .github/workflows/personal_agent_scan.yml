@@ -46,19 +46,19 @@ jobs:
       - name: Detect personal agent
         id: detect_agent
         run: |
-          # 尝试从agents/目录中检测用户的agent
+          # 优先使用当前仓库所有者同名 agent
           AGENT_DIR="agents"
+          REPO_OWNER="${{ github.repository_owner }}"
+          OWNER_AGENT_FILE="$AGENT_DIR/$REPO_OWNER/agent.yml"
 
-          # 查找第一个用户agent配置文件（排除_template）
-          AGENT_FILE=$(find "$AGENT_DIR" -maxdepth 2 -name "agent.yml" \
-            -not -path "$AGENT_DIR/_template/*" \
-            | head -n 1)
-
-          if [ -z "$AGENT_FILE" ]; then
-            echo "⚠️ 未找到用户agent配置，跳过扫描"
+          if [ ! -f "$OWNER_AGENT_FILE" ]; then
+            echo "⚠️ 未找到仓库所有者 agent 配置: $OWNER_AGENT_FILE，跳过扫描"
             echo "has_agent=false" >> $GITHUB_OUTPUT
             exit 0
           fi
+
+          AGENT_FILE="$OWNER_AGENT_FILE"
+          echo "✅ 检测到仓库所有者 agent: $REPO_OWNER"
 
           # 提取agent名称（从目录名）
           AGENT_NAME=$(dirname "$AGENT_FILE" | xargs basename)
