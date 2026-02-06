@@ -12,6 +12,8 @@ import re
 import subprocess
 from typing import Any
 
+import yaml
+
 from issuelab.agents.executor import run_single_agent_text
 from issuelab.tools.github import get_issue_info
 
@@ -159,30 +161,42 @@ async def llm_select_issues_async(
 ## 候选Issues ({len(issues_data)}个)
 {issues_text}
 
-## 输出要求
-严格输出JSON（不要markdown代码块）：
+## 输出要求（必须严格遵守）
+- 只输出**一行**JSON文本，**不要**使用markdown代码块
+- **禁止**YAML、禁止多段落、禁止多余解释文本
+- JSON必须可被`json.loads`直接解析
+
+示例（仅格式示意）：
 {{"selected_issues": [21], "selections": [{{"issue_number": 21, "priority": 9, "reason": "原因"}}], "reasoning": "说明"}}
 
-选择标准：主题相关、价值匹配、能提供独特见解。输出JSON："""
+选择标准：主题相关、价值匹配、能提供独特见解。现在开始输出JSON："""
 
     # 调用智能体
     logger.info("[LLM] 调用智能体分析...")
     response_text = await run_single_agent_text(prompt, agent_name=agent_name or "personal_scan")
 
-    # 解析JSON
-    text = re.sub(r"```(?:json)?\s*", "", response_text)  # 去除markdown
-    match = re.search(r"\{.*\}", text, re.DOTALL)
+    # 解析JSON（优先）或YAML（兜底）
+    text = re.sub(r"```(?:json|yaml)?\s*", "", response_text)  # 去除markdown
+    text = re.sub(r"\s*```", "", text).strip()
 
-    if not match:
-        logger.error(f"未找到JSON: {text[:200]}")
-        return {"selected_issues": [], "selections": [], "reasoning": "解析失败"}
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        try:
+            result = json.loads(match.group(0))
+            logger.info(f"[LLM] 选择了 {len(result.get('selected_issues', []))} 个Issue")
+            return result
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON解析错误: {e}，尝试解析YAML")
 
     try:
-        result = json.loads(match.group(0))
-        logger.info(f"[LLM] 选择了 {len(result.get('selected_issues', []))} 个Issue")
-        return result
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON解析错误: {e}")
+        parsed = yaml.safe_load(text)
+        if isinstance(parsed, dict):
+            logger.info(f"[LLM] 选择了 {len(parsed.get('selected_issues', []))} 个Issue (YAML)")
+            return parsed
+        logger.error(f"YAML解析结果非对象: {type(parsed)}")
+        return {"selected_issues": [], "selections": [], "reasoning": "解析失败"}
+    except yaml.YAMLError as e:
+        logger.error(f"YAML解析错误: {e}")
         return {"selected_issues": [], "selections": [], "reasoning": f"错误: {e}"}
 
 
