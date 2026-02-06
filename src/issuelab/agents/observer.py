@@ -277,8 +277,12 @@ async def run_observer_for_papers(
             continue
         if 0 <= idx_value < len(papers):
             paper = papers[idx_value].copy()
-            paper["reason"] = item.get("reason", "")
-            paper["summary"] = item.get("summary", paper.get("summary", ""))
+            reason = item.get("reason", "")
+            summary = item.get("summary", "")
+            if not summary:
+                summary = paper.get("summary", "")
+            paper["reason"] = reason
+            paper["summary"] = summary
             recommended_papers.append(paper)
 
     logger.info(f"[arxiv_observer] 推荐 {len(recommended_papers)} 篇论文")
