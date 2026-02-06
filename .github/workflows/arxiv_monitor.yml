@@ -74,6 +74,7 @@ jobs:
             --repo "${{ github.repository }}" \
             --categories "${{ env.CATEGORIES }}" \
             --max-papers ${{ env.FETCH_PAPERS }} \
+            --max-recommended ${{ env.MAX_RECOMMENDED }} \
             --last-scan "${{ steps.last_scan.outputs.last_scan }}"
 
       - name: Update last scan time

@@ -3,6 +3,8 @@
 解析 Agent 响应（YAML 格式）。
 """
 
+import re
+
 from issuelab.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -142,17 +144,49 @@ def parse_papers_recommendation(response: str, paper_count: int) -> list[dict[st
     # 解析 recommended 列表
     rec_list = yaml_data.get("recommended", [])
     if not rec_list:
+        # 兼容 recommendations 字段（字符串或字典列表）
+        rec_list = yaml_data.get("recommendations", [])
+
+    if not rec_list:
         # 尝试从 analysis 中提取信息
-        logger.warning("响应中未找到 recommended 字段")
+        logger.warning("响应中未找到 recommended / recommendations 字段")
         return recommended
 
     for item in rec_list:
         if not isinstance(item, dict):
+            # 允许字符串形式：从文本中提取“论文X / paper X”索引
+            if isinstance(item, str):
+                indices = _extract_paper_indices(item)
+                for idx in indices:
+                    if 0 <= idx < paper_count:
+                        recommended.append(
+                            {
+                                "index": idx,
+                                "title": "",
+                                "reason": item,
+                                "summary": "",
+                                # 以下字段需要从原始论文数据中获取
+                                "category": "",
+                                "url": "",
+                                "pdf_url": "",
+                                "authors": "",
+                                "published": "",
+                            }
+                        )
             continue
 
         index = item.get("index", -1)
-        if index < 0 or index >= paper_count:
-            continue
+        if isinstance(index, str) and index.isdigit():
+            index = int(index)
+        if not isinstance(index, int) or index < 0 or index >= paper_count:
+            # 允许从文本字段补救
+            text = " ".join(str(item.get(key, "")) for key in ("title", "reason", "summary"))
+            indices = _extract_paper_indices(text)
+            if not indices:
+                continue
+            index = indices[0]
+            if index < 0 or index >= paper_count:
+                continue
 
         recommended.append(
             {
@@ -171,6 +205,23 @@ def parse_papers_recommendation(response: str, paper_count: int) -> list[dict[st
 
     logger.info(f"解析到 {len(recommended)} 篇推荐论文")
     return recommended
+
+
+def _extract_paper_indices(text: str) -> list[int]:
+    """从文本中提取论文索引（例如：论文0 / paper 2）。"""
+    if not text:
+        return []
+    pattern = re.compile(r"(?:论文|paper)\s*#?\s*(\d+)", re.IGNORECASE)
+    matches = pattern.findall(text)
+    indices: list[int] = []
+    for match in matches:
+        try:
+            idx = int(match)
+        except ValueError:
+            continue
+        if idx not in indices:
+            indices.append(idx)
+    return indices
 
 
 def _get_default_trigger_comment(agent: str) -> str:

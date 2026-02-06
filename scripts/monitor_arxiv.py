@@ -309,6 +309,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", type=str, help="Repository (owner/repo)")
     parser.add_argument("--categories", type=str, default="cs.AI,cs.LG,cs.CL")
     parser.add_argument("--max-papers", type=int, default=10, help="获取论文数量（分析前）")
+    parser.add_argument("--max-recommended", type=int, default=2, help="最多推荐论文数量")
     parser.add_argument("--output", type=str, help="Output JSON file (optional)")
     parser.add_argument("--last-scan", type=str, help="Last scan time (ISO format)")
     parser.add_argument("--scan-only", action="store_true", help="Only scan, don't analyze")
@@ -358,6 +359,9 @@ def main(argv: list[str] | None = None) -> int:
 
         # Observer 分析（只分析新论文）
         recommended = analyze_with_observer(new_papers, args.token)
+
+        if args.max_recommended > 0:
+            recommended = recommended[: args.max_recommended]
 
         if len(recommended) == 0:
             if len(new_papers) == 0:
