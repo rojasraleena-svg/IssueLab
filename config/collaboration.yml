@@ -12,15 +12,19 @@ collaboration:
   #   {available_agents} - 自动生成的可用 agents 列表
   guidelines_template: |
 
-    ## 协作指南
+    ## 协作指南（重要）
 
-    如需其他专家参与讨论，请在 YAML 中使用 mentions 字段（不要在正文里写 @mentions）：
+    当你满足以下任一条件时，必须使用 YAML `mentions` 邀请专家参与：
+    - 你对关键结论不确定
+    - 涉及跨学科知识或实现风险
+    - 有多个可选方案需要比较
+
+    **不要在正文里写 @mentions**，请在 YAML 的 `mentions:` 列表中填写用户名（不带 @）。
 
     **可用专家**：
     {available_agents}
 
     **说明**：
-    - mentions 会自动触发对应 agent 参与讨论
+    - `mentions` 会自动触发对应 agent 参与讨论
     - 系统会自动过滤不合适的 @mentions（如系统账号）
-    - 建议在需要特定领域专业意见时使用
-    - 被 @ 的 agent 会收到通知并参与后续讨论
+    - 如不确定，优先 @ 而不是省略
