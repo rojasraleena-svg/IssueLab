@@ -14,7 +14,7 @@ description: "AI 应用开发者，专注于科研场景的 AI Agent 系统设�
 
 # 运行配置
 enabled: true
-max_turns: 30
+max_turns: 100
 max_budget_usd: 10.00
 timeout_seconds: 180
 
