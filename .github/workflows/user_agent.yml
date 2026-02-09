@@ -225,3 +225,106 @@ jobs:
               issue_number: ${{ inputs.issue_number }},
               body: `❌ @${{ steps.agent.outputs.username }} 的执行在 API 健康检查阶段失败（${timestamp}）。\n\n原因：上游 LLM API 不可用或端点配置错误。\n请检查 fork 仓库的 \`ANTHROPIC_BASE_URL\` / \`ANTHROPIC_AUTH_TOKEN\` 配置，并查看 [Actions logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})。`
             });
+
+      - name: Emit observability summary
+        if: always()
+        env:
+          WF_NAME: ${{ github.workflow }}
+          JOB_NAME: run-agent
+          RUN_ID: ${{ github.run_id }}
+          REPO_NAME: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          CHECK_EXISTS: ${{ steps.check.outputs.exists }}
+          CHECK_OUTCOME: ${{ steps.check.outcome }}
+          API_HEALTH_OUTCOME: ${{ steps.api_health.outcome }}
+          RUN_AGENT_OUTCOME: ${{ steps.run_agent.outcome }}
+          COMMENT_FAILED: ${{ steps.run_agent.outputs.comment_failed }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/observability
+
+          python - << 'PY'
+          import json
+          import os
+          from datetime import UTC, datetime
+
+          check_exists = (os.getenv("CHECK_EXISTS") or "") == "true"
+          check_outcome = os.getenv("CHECK_OUTCOME") or ""
+          api_outcome = os.getenv("API_HEALTH_OUTCOME") or ""
+          run_outcome = os.getenv("RUN_AGENT_OUTCOME") or ""
+          comment_failed = (os.getenv("COMMENT_FAILED") or "").lower() == "true"
+
+          input_count = 1
+          success_count = 1 if run_outcome == "success" else 0
+          failed_count = 0 if success_count == 1 else 1
+          skipped_count = 0
+
+          failures = []
+          if check_outcome == "failure" or not check_exists:
+            failures.append({"code": "CONFIG_MISSING", "count": 1, "samples": []})
+          elif api_outcome == "failure":
+            failures.append({"code": "API_UNAVAILABLE", "count": 1, "samples": []})
+          elif run_outcome == "failure":
+            failures.append({"code": "AGENT_EXECUTION_FAILED", "count": 1, "samples": []})
+          if comment_failed:
+            failures.append({"code": "COMMENT_POST_FAILED", "count": 1, "samples": []})
+
+          status = "success"
+          if failed_count > 0 and success_count > 0:
+            status = "partial"
+          elif failed_count > 0 and success_count == 0:
+            status = "failure"
+
+          payload = {
+            "schema_version": "v1",
+            "workflow": os.getenv("WF_NAME"),
+            "job": os.getenv("JOB_NAME"),
+            "run_id": os.getenv("RUN_ID"),
+            "repo": os.getenv("REPO_NAME"),
+            "sha": os.getenv("SHA"),
+            "issue_number": os.getenv("ISSUE_NUMBER"),
+            "finished_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "metrics": {
+              "input_count": input_count,
+              "success_count": success_count,
+              "failed_count": failed_count,
+              "skipped_count": skipped_count,
+            },
+            "failures_topn": failures[:5],
+            "status": status,
+          }
+
+          with open("artifacts/observability/user_agent__run-agent.json", "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False, indent=2)
+
+          summary = [
+            "## Observability (run-agent)",
+            "",
+            "| metric | value |",
+            "|---|---:|",
+            f"| input_count | {input_count} |",
+            f"| success_count | {success_count} |",
+            f"| failed_count | {failed_count} |",
+            f"| skipped_count | {skipped_count} |",
+            f"| status | {status} |",
+            "",
+            "### Failure TopN",
+          ]
+          if failures:
+            for item in failures:
+              summary.append(f"- `{item['code']}`: {item['count']}")
+          else:
+            summary.append("- none")
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+            f.write("\n".join(summary) + "\n")
+          PY
+
+      - name: Upload observability artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-agent-observability-${{ inputs.issue_number }}-${{ github.run_id }}
+          path: artifacts/observability/
+          retention-days: 14

@@ -132,3 +132,100 @@ jobs:
             artifacts/daily_issue_health_facts.json
             artifacts/daily_issue_health_agent.json
           retention-days: 14
+
+      - name: Emit observability summary
+        if: always()
+        env:
+          WF_NAME: ${{ github.workflow }}
+          JOB_NAME: report
+          RUN_ID: ${{ github.run_id }}
+          REPO_NAME: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          OPS_OUTCOME: ${{ steps.ops_daily.outcome }}
+          PUBLISH_ENABLED: ${{ env.PUBLISH_COMMENT }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/observability
+
+          python - << 'PY'
+          import json
+          import os
+          from datetime import UTC, datetime
+          from pathlib import Path
+
+          facts_path = Path("artifacts/daily_issue_health_facts.json")
+          metrics = {}
+          if facts_path.exists():
+            try:
+              metrics = json.loads(facts_path.read_text(encoding="utf-8")).get("metrics", {})
+            except Exception:
+              metrics = {}
+
+          input_count = int(metrics.get("touched_issues", 0) or 0)
+          failed_count = int(metrics.get("workflow_failed", 0) or 0)
+          success_count = max(int(metrics.get("workflow_total", 0) or 0) - failed_count, 0)
+          skipped_count = 0
+
+          failures = []
+          if (os.getenv("OPS_OUTCOME") or "") == "failure":
+            failures.append({"code": "OPS_DAILY_FAILED", "count": 1, "samples": []})
+          if (os.getenv("PUBLISH_ENABLED") or "").lower() == "false":
+            failures.append({"code": "PUBLISH_SKIPPED_BY_CONFIG", "count": 1, "samples": []})
+
+          status = "success"
+          if failures:
+            status = "partial"
+          if failed_count > 0 and success_count == 0:
+            status = "failure"
+
+          payload = {
+            "schema_version": "v1",
+            "workflow": os.getenv("WF_NAME"),
+            "job": os.getenv("JOB_NAME"),
+            "run_id": os.getenv("RUN_ID"),
+            "repo": os.getenv("REPO_NAME"),
+            "sha": os.getenv("SHA"),
+            "finished_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "metrics": {
+              "input_count": input_count,
+              "success_count": success_count,
+              "failed_count": failed_count,
+              "skipped_count": skipped_count,
+            },
+            "failures_topn": failures[:5],
+            "status": status,
+          }
+          Path("artifacts/observability/daily_issue_health_report__report.json").write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+          )
+
+          summary = [
+            "## Observability (daily report)",
+            "",
+            "| metric | value |",
+            "|---|---:|",
+            f"| input_count | {input_count} |",
+            f"| success_count | {success_count} |",
+            f"| failed_count | {failed_count} |",
+            f"| skipped_count | {skipped_count} |",
+            f"| status | {status} |",
+            "",
+            "### Failure TopN",
+          ]
+          if failures:
+            for item in failures:
+              summary.append(f"- `{item['code']}`: {item['count']}")
+          else:
+            summary.append("- none")
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+            f.write("\n".join(summary) + "\n")
+          PY
+
+      - name: Upload observability artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-report-observability-${{ github.run_id }}
+          path: artifacts/observability/
+          retention-days: 14

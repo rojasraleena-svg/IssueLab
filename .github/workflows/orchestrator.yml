@@ -641,3 +641,132 @@ jobs:
           name: triggered-agent-logs-${{ steps.extract_agent.outputs.agent_name }}-${{ github.event.issue.number }}
           path: logs/
           retention-days: 7
+
+  observability-summary:
+    if: always()
+    needs:
+      - auto-trigger-review
+      - detect-mentions
+      - run-moderator
+      - run-reviewer_a
+      - run-reviewer_b
+      - run-summarizer
+      - run-pubmed-observer
+      - run-arxiv-observer
+      - run-observer
+      - run-test
+      - run-echo
+      - run-video-manim
+      - process-command
+      - observer-triggered-agent
+    runs-on: ubuntu-latest
+    steps:
+      - name: Emit observability summary
+        env:
+          WF_NAME: ${{ github.workflow }}
+          JOB_NAME: observability-summary
+          RUN_ID: ${{ github.run_id }}
+          REPO_NAME: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          NEEDS_JSON: ${{ toJson(needs) }}
+          BUILTIN_AGENTS: ${{ needs.detect-mentions.outputs.agents }}
+          HAS_BUILTIN: ${{ needs.detect-mentions.outputs.has_builtin }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/observability
+
+          python - << 'PY'
+          import json
+          import os
+          from collections import Counter
+          from datetime import UTC, datetime
+          from pathlib import Path
+
+          needs = json.loads(os.getenv("NEEDS_JSON") or "{}")
+          results = {}
+          for job, payload in needs.items():
+            if isinstance(payload, dict):
+              results[job] = str(payload.get("result", "unknown"))
+            else:
+              results[job] = "unknown"
+
+          success_count = sum(1 for r in results.values() if r == "success")
+          failed_count = sum(1 for r in results.values() if r == "failure")
+          skipped_count = sum(1 for r in results.values() if r == "skipped")
+          input_count = len([j for j in results.keys() if j != "observability-summary"])
+
+          failures = Counter()
+          for job, result in results.items():
+            if result == "failure":
+              failures[f"JOB_FAILED:{job}"] += 1
+            elif result == "cancelled":
+              failures[f"JOB_CANCELLED:{job}"] += 1
+
+          failures_topn = [{"code": k, "count": v, "samples": []} for k, v in failures.most_common(8)]
+          status = "success"
+          if failed_count > 0 and success_count > 0:
+            status = "partial"
+          elif failed_count > 0 and success_count == 0:
+            status = "failure"
+          elif success_count == 0 and skipped_count > 0:
+            status = "skipped"
+
+          payload = {
+            "schema_version": "v1",
+            "workflow": os.getenv("WF_NAME"),
+            "job": os.getenv("JOB_NAME"),
+            "run_id": os.getenv("RUN_ID"),
+            "repo": os.getenv("REPO_NAME"),
+            "sha": os.getenv("SHA"),
+            "issue_number": os.getenv("ISSUE_NUMBER"),
+            "finished_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "metrics": {
+              "input_count": input_count,
+              "success_count": success_count,
+              "failed_count": failed_count,
+              "skipped_count": skipped_count,
+            },
+            "context": {
+              "has_builtin_mentions": os.getenv("HAS_BUILTIN") or "",
+              "builtin_agents": os.getenv("BUILTIN_AGENTS") or "",
+              "job_results": results,
+            },
+            "failures_topn": failures_topn,
+            "status": status,
+          }
+
+          Path("artifacts/observability/orchestrator__summary.json").write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+          )
+
+          summary = [
+            "## Observability (orchestrator summary)",
+            "",
+            "| metric | value |",
+            "|---|---:|",
+            f"| input_count | {input_count} |",
+            f"| success_count | {success_count} |",
+            f"| failed_count | {failed_count} |",
+            f"| skipped_count | {skipped_count} |",
+            f"| status | {status} |",
+            "",
+            "### Failure TopN",
+          ]
+          if failures_topn:
+            for item in failures_topn:
+              summary.append(f"- `{item['code']}`: {item['count']}")
+          else:
+            summary.append("- none")
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as f:
+            f.write("\n".join(summary) + "\n")
+          PY
+
+      - name: Upload observability artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: orchestrator-observability-${{ github.event.issue.number }}-${{ github.run_id }}
+          path: artifacts/observability/
+          retention-days: 14
