@@ -10,6 +10,7 @@ timeout_seconds: 900
 enable_skills: true
 enable_subagents: true
 enable_mcp: true
+enable_system_mcp: false
 
 repository: "gqy20/IssueLab"
 branch: "main"

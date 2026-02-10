@@ -1,0 +1,16 @@
+name: "echo"
+owner: echo
+description: "极简回显 agent，用于快速测试基础功能。"
+
+enabled: true
+max_turns: 100
+max_budget_usd: 10.0
+timeout_seconds: 600
+
+enable_skills: false
+enable_subagents: false
+enable_mcp: false
+enable_system_mcp: false
+
+repository: "gqy20/IssueLab"
+branch: "main"

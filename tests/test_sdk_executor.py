@@ -157,7 +157,7 @@ class TestMcpConfigLoading:
         agent_dir.mkdir(parents=True)
         (agent_dir / ".mcp.json").write_text(json.dumps(agent_mcp), encoding="utf-8")
 
-        servers = load_mcp_servers_for_agent("alice", root_dir=tmp_path)
+        servers = load_mcp_servers_for_agent("alice", root_dir=tmp_path, include_system=True)
         assert servers["global"]["url"] == "https://global.example.com"
         assert servers["agent"]["url"] == "https://agent.example.com"
         assert servers["shared"]["url"] == "https://agent.example.com"
@@ -165,7 +165,11 @@ class TestMcpConfigLoading:
     def test_create_agent_options_includes_mcp_allowed_tools(self):
         """当存在 MCP servers 时，应包含 mcp__<server>__* 授权"""
         clear_agent_options_cache()
-        with patch("issuelab.agents.options.load_mcp_servers_for_agent") as mock_load:
+        with (
+            patch.dict(os.environ, {"ISSUELAB_ENABLE_DEFAULT_FEATURES": "1"}),
+            patch("issuelab.agents.options.get_agent_config", return_value=None),
+            patch("issuelab.agents.options.load_mcp_servers_for_agent") as mock_load,
+        ):
             mock_load.return_value = {"docs": {"type": "http", "url": "https://docs.example.com"}}
             options = create_agent_options(agent_name="moderator")
             assert "mcp__docs__*" in options.allowed_tools
@@ -178,7 +182,8 @@ class TestMcpConfigLoading:
         root_mcp = {"mcpServers": {"alpha": {"type": "http", "url": "https://a.example.com"}}}
         (tmp_path / ".mcp.json").write_text(json.dumps(root_mcp), encoding="utf-8")
 
-        text = format_mcp_servers_for_prompt("any", root_dir=tmp_path)
+        with patch.dict(os.environ, {"ISSUELAB_ENABLE_SYSTEM_MCP": "1", "ISSUELAB_ENABLE_DEFAULT_FEATURES": "1"}):
+            text = format_mcp_servers_for_prompt("any", root_dir=tmp_path)
         assert "- alpha [http]" in text
 
     def test_mcp_load_timeout_returns_empty(self):
@@ -188,7 +193,7 @@ class TestMcpConfigLoading:
         (tmp_root / ".mcp.json").write_text("{}", encoding="utf-8")
         with patch("issuelab.agents.options._read_text_with_timeout") as mock_read:
             mock_read.side_effect = TimeoutError("timeout")
-            servers = load_mcp_servers_for_agent("any", root_dir=tmp_root)
+            servers = load_mcp_servers_for_agent("any", root_dir=tmp_root, include_system=True)
             assert servers == {}
 
     def test_mcp_env_alias_resolves_from_process_env(self, tmp_path: Path, monkeypatch):
@@ -222,7 +227,8 @@ class TestMcpConfigLoading:
         """MCP_LOG_TOOLS=1 时应触发工具列表逻辑"""
         clear_agent_options_cache()
         with (
-            patch.dict(os.environ, {"MCP_LOG_TOOLS": "1"}),
+            patch.dict(os.environ, {"MCP_LOG_TOOLS": "1", "ISSUELAB_ENABLE_DEFAULT_FEATURES": "1"}),
+            patch("issuelab.agents.options.get_agent_config", return_value=None),
             patch("issuelab.agents.options.load_mcp_servers_for_agent") as mock_load,
             patch("issuelab.agents.options._list_tools_for_mcp_server") as mock_list,
         ):
@@ -257,6 +263,7 @@ class TestSubagents:
 
         # patch AGENTS_DIR to point to tmp agents root
         with (
+            patch.dict(os.environ, {"ISSUELAB_ENABLE_DEFAULT_FEATURES": "1"}),
             patch("issuelab.agents.options.AGENTS_DIR", tmp_path / "agents"),
             patch("issuelab.agents.options.discover_agents") as mock_discover,
         ):
@@ -358,7 +365,7 @@ class TestCaching:
         assert options.max_budget_usd == 1.5
 
     def test_create_agent_options_feature_flags(self, monkeypatch):
-        """agent.yml 功能开关应生效（默认启用）"""
+        """agent.yml 功能开关应生效"""
         from issuelab.agents import options as options_mod
 
         options_mod.clear_agent_options_cache()
@@ -374,6 +381,57 @@ class TestCaching:
 
         options = options_mod.create_agent_options(agent_name="alice")
         assert not any(t.startswith("mcp__") for t in options.allowed_tools)
+
+    def test_feature_flags_default_disabled(self, monkeypatch):
+        """内置系统智能体默认应关闭可选能力。"""
+        from issuelab.agents import options as options_mod
+
+        monkeypatch.delenv("ISSUELAB_ENABLE_DEFAULT_FEATURES", raising=False)
+        monkeypatch.delenv("ISSUELAB_DEFAULT_ENABLE_SKILLS", raising=False)
+        monkeypatch.delenv("ISSUELAB_DEFAULT_ENABLE_SUBAGENTS", raising=False)
+        monkeypatch.delenv("ISSUELAB_DEFAULT_ENABLE_MCP", raising=False)
+        monkeypatch.setattr(options_mod, "get_agent_config", lambda *a, **k: None)
+
+        flags = options_mod._get_agent_feature_flags("moderator")
+        assert flags == {
+            "enable_skills": False,
+            "enable_subagents": False,
+            "enable_mcp": False,
+        }
+
+    def test_feature_flags_default_enabled_for_personal_agent(self, monkeypatch):
+        """个人智能体默认应开启可选能力。"""
+        from issuelab.agents import options as options_mod
+
+        monkeypatch.delenv("ISSUELAB_ENABLE_DEFAULT_FEATURES", raising=False)
+        monkeypatch.delenv("ISSUELAB_DEFAULT_ENABLE_SKILLS", raising=False)
+        monkeypatch.delenv("ISSUELAB_DEFAULT_ENABLE_SUBAGENTS", raising=False)
+        monkeypatch.delenv("ISSUELAB_DEFAULT_ENABLE_MCP", raising=False)
+        monkeypatch.setattr(options_mod, "get_agent_config", lambda *a, **k: None)
+
+        flags = options_mod._get_agent_feature_flags("alice")
+        assert flags == {
+            "enable_skills": True,
+            "enable_subagents": True,
+            "enable_mcp": True,
+        }
+
+    def test_feature_flags_can_enable_globally(self, monkeypatch):
+        """设置全局开关后可选能力应默认开启。"""
+        from issuelab.agents import options as options_mod
+
+        monkeypatch.setenv("ISSUELAB_ENABLE_DEFAULT_FEATURES", "1")
+        monkeypatch.delenv("ISSUELAB_DEFAULT_ENABLE_SKILLS", raising=False)
+        monkeypatch.delenv("ISSUELAB_DEFAULT_ENABLE_SUBAGENTS", raising=False)
+        monkeypatch.delenv("ISSUELAB_DEFAULT_ENABLE_MCP", raising=False)
+        monkeypatch.setattr(options_mod, "get_agent_config", lambda *a, **k: None)
+
+        flags = options_mod._get_agent_feature_flags("moderator")
+        assert flags == {
+            "enable_skills": True,
+            "enable_subagents": True,
+            "enable_mcp": True,
+        }
 
 
 def test_builtin_agents_use_higher_default_overrides():

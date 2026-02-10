@@ -1,0 +1,16 @@
+name: "moderator"
+owner: moderator
+description: "Issue 审核与调度代理 - 检查信息完整性，分配评审流程。"
+
+enabled: true
+max_turns: 100
+max_budget_usd: 10.0
+timeout_seconds: 600
+
+enable_skills: false
+enable_subagents: false
+enable_mcp: false
+enable_system_mcp: false
+
+repository: "gqy20/IssueLab"
+branch: "main"

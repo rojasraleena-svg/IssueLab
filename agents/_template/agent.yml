@@ -25,10 +25,14 @@ max_turns: 30                    # 可选：最大对话轮数
 max_budget_usd: 10.00            # 可选：最大消耗金额（美元）
 timeout_seconds: 180             # 可选：单次运行超时（秒）
 
-# 功能开关（可选，默认启用）
+# 功能开关（可选）
+# 默认策略：
+# - 个人智能体：默认启用
+# - 系统智能体：建议显式配置并默认关闭（按需开启）
 enable_skills: true              # 是否加载 Skills（.claude/skills）
 enable_subagents: true           # 是否加载 Subagents（.claude/agents）
-enable_mcp: true                 # 是否启用 MCP 工具
+enable_mcp: true                 # 是否启用 MCP 工具（agent 目录下 .mcp.json）
+enable_system_mcp: false         # 是否加载项目根目录 .mcp.json（系统级 MCP）
 
 # 仓库配置（重要：必须修改为你自己的 fork 仓库）
 repository: "your-github-id/IssueLab"  # 必需：你的 fork 仓库
@@ -70,4 +74,5 @@ workflow_file: user_agent.yml      # 可选：workflow_dispatch 模式时指定�
 # 5. 功能开关：
 #    - enable_skills: 控制是否加载 Skills（.claude/skills）
 #    - enable_subagents: 控制是否加载 Subagents（.claude/agents）
-#    - enable_mcp: 控制是否启用 MCP 工具（.mcp.json）
+#    - enable_mcp: 控制是否启用 MCP 工具（agent 目录下 .mcp.json）
+#    - enable_system_mcp: 控制是否加载项目根目录 .mcp.json（默认 false）

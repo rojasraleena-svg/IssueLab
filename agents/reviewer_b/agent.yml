@@ -1,0 +1,16 @@
+name: "reviewer_b"
+owner: reviewer_b
+description: "批判性评审代理 - 漏洞识别、质疑反例、风险评估。"
+
+enabled: true
+max_turns: 100
+max_budget_usd: 10.0
+timeout_seconds: 600
+
+enable_skills: false
+enable_subagents: false
+enable_mcp: false
+enable_system_mcp: false
+
+repository: "gqy20/IssueLab"
+branch: "main"
