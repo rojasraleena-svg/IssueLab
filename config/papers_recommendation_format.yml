@@ -12,8 +12,3 @@ recommended_item_fields:
   - title
   - reason
   - summary
-
-notes:
-  - analysis should describe how many papers were reviewed and why items were selected
-  - recommended must be a list of objects with the fields above
-  - index must be within the input list range

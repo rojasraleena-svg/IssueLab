@@ -1,13 +1,6 @@
 version: 1
 force_normalize: false
 
-structured_fields:
-  - summary
-  - findings
-  - recommendations
-  - mentions
-  - confidence
-
 sections:
   summary: "## Summary"
   findings: "## Key Findings"
@@ -21,8 +14,3 @@ limits:
   actions_max_count: 3
   actions_max_chars: 160
   mentions_max_count: 5
-
-notes:
-  - mentions are parsed from controlled sections only.
-  - "use `相关人员: @user1 @user2` or `协作请求:` bullet list for dispatch."
-  - observer should include decision fields in YAML: analysis, should_trigger, reason, agent, comment.
