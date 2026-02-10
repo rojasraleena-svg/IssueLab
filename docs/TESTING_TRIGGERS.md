@@ -40,21 +40,21 @@ export ANTHROPIC_AUTH_TOKEN="your_anthropic_api_key"
 uv run pytest tests/ -v
 
 # 运行特定模块测试
-uv run pytest tests/test_parser.py -v          # @mention 解析测试
+uv run pytest tests/test_parser.py -v          # mention 解析测试
 uv run pytest tests/test_observer_trigger.py -v  # Observer 触发测试
 uv run pytest tests/test_cli.py -v              # CLI 命令测试
 ```
 
 ---
 
-## @Mention 触发测试
+## Mention 解析与受控区触发测试
 
 ### 测试范围
 
 | 模块 | 文件 | 说明 |
 |------|------|------|
-| 解析器 | `src/issuelab/parser.py` | 解析 @mention 真名 |
-| 测试 | `tests/test_parser.py` | @mention 解析测试 |
+| 解析器 | `src/issuelab/parser.py` | 解析 mention 真名 |
+| 测试 | `tests/test_parser.py` | mention 解析测试 |
 
 ### 测试用例
 
@@ -83,7 +83,7 @@ uv run pytest tests/test_parser.py -v
 #### 3. 手动测试命令行
 
 ```bash
-# 解析 @mention
+# 解析 mention
 uv run python -c "
 from issuelab.parser import parse_agent_mentions
 
@@ -440,19 +440,17 @@ uv run python -m issuelab review --issue 1 --post
 # tests/test_response_processor.py
 
 def test_process_agent_response_mentions():
-    """测试处理响应中的结构化 mentions"""
+    """测试处理响应中的受控区 mentions"""
     from issuelab.response_processor import process_agent_response
 
     result = process_agent_response(
         agent_name="moderator",
-        response="""```yaml
-summary: "Test"
-findings: []
-recommendations: []
-mentions:
-  - reviewer_a
-confidence: "high"
-```""",
+        response=\"\"\"## Summary
+Test
+
+---
+相关人员: @reviewer_a
+\"\"\",
         issue_number=1,
         issue_title="Test",
         issue_body="Body",
@@ -573,5 +571,5 @@ uv run pytest tests/test_agents.py -v
 
 - [CLAUDE.md](../CLAUDE.md) - 项目架构说明
 - [orchestrator.yml](../.github/workflows/orchestrator.yml) - GitHub Actions 工作流
-- [Agent Modules](src/issuelab/agents/) - Agent 执行引擎模块化架构
-- [Parser](src/issuelab/parser.py) - @mention 解析器
+- [Agent Modules](../src/issuelab/agents/) - Agent 执行引擎模块化架构
+- [Parser](../src/issuelab/parser.py) - mention 解析器

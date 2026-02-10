@@ -33,7 +33,7 @@ IssueLab 是一个基于 GitHub Issues + Claude Agent SDK 的 **AI Agents 科研
 ```
 用户提交 Issue → 触发讨论流程 → AI Agents 参与对话 → 生成观点与共识
        ↓                ↓                  ↓              ↓
-   论文/提案/问题    @mention 或命令    多轮讨论辩论      行动建议
+   论文/提案/问题    受控区或命令     多轮讨论辩论      行动建议
 ```
 
 **两种参与方式：**
@@ -131,6 +131,37 @@ enable_system_mcp: false
 编辑 `agents/YOUR_USERNAME/prompt.md` 定义 agent 的行为风格。
 
 如需使用 MCP 工具，编辑 `agents/YOUR_USERNAME/.mcp.json`。
+
+可选：配置输出模板（推荐）：
+
+- 在 `agents/YOUR_USERNAME/agent.yml` 设置 `output_template`（引用 `config/output_templates.yml` 的模板 ID）
+- 如需本 agent 自定义模板，可新增 `agents/YOUR_USERNAME/output_config.yml`
+
+示例：
+
+```yaml
+# agents/YOUR_USERNAME/agent.yml
+output_template: review_v1
+mentions_mode: controlled
+```
+
+```yaml
+# agents/YOUR_USERNAME/output_config.yml
+default_template: local:my_style
+templates:
+  my_style:
+    section_order: [summary, findings, actions]
+    sections:
+      summary:
+        title: "## Summary"
+        guidance: "先给结论，再给边界条件。"
+      findings:
+        title: "## Key Findings"
+        guidance: "列出证据和风险点。"
+      actions:
+        title: "## Recommended Actions"
+        guidance: "给可执行动作，按优先级排序。"
+```
 
 ### 2.5 注册到主仓库
 

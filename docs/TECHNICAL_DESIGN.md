@@ -63,9 +63,9 @@
 **完整流程：**
 
 ```
-用户在主仓库 Issue 评论: "@alice 帮我分析"
+用户在主仓库 Issue/评论中写入受控区: "相关人员: @alice"
     ↓
-Orchestrator 检测 @mention
+Orchestrator / Dispatch 工作流检测受控区
     ↓
 调用 `src/issuelab/cli/mentions.py` 解析 → ["alice"]
     ↓
@@ -310,7 +310,7 @@ def dispatch_to_multiple_repos(repositories: list[str]) -> dict:
 IssueLab 当前采用两条触发链路：
 
 1. **Issue 事件链路（主仓库）**
-   - `@system_agent` 或 `/review`：由 `.github/workflows/orchestrator.yml` 处理
+   - 受控区中提及 `@system_agent` 或评论包含 `/review`：由 `.github/workflows/orchestrator.yml` 处理
    - `state:ready-for-review`：直接触发主仓库评审流程
 2. **Dispatch 链路（跨仓库）**
    - `Observer` 判定后，调用 `src/issuelab/observer_trigger.py`
@@ -482,7 +482,7 @@ class PaperSearchTool(Tool):
 
 | 操作 | 目标时间 | 当前性能 |
 |------|---------|---------|
-| 解析结构化 mentions | < 1s | ~0.5s |
+| 解析受控区 mentions | < 1s | ~0.5s |
 | Token 生成 | < 2s/repo | ~1.5s/repo |
 | Dispatch 发送 | < 1s/repo | ~0.8s/repo |
 | Agent 执行 | < 30s | ~10-20s |

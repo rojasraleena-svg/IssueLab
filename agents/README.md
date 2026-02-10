@@ -13,14 +13,16 @@ agents/
 └── gqy20/              # 用户：gqy20 (官方示例)
     ├── agent.yml       # gqy20 的智能体配置
     └── prompt.md       # gqy20 的智能体提示词
+    └── output_config.yml # gqy20 的输出模板覆盖（可选）
     └── .mcp.json       # gqy20 的 MCP 配置（可选）
 ```
 
 **重要说明：**
 - 一个用户 = 一个智能体 = 一个文件夹
-- 每个文件夹默认只有两个文件：`agent.yml` 和 `prompt.md`
+- 每个文件夹最小只需两个文件：`agent.yml` 和 `prompt.md`
+- 可选：如果需要输出模板覆盖，可额外添加 `output_config.yml`
 - 可选：如果需要 MCP 工具，可额外添加 `.mcp.json`
-- 不需要子目录结构！
+- 可选：可添加 `.claude/skills/` 与 `.claude/agents/`
 
 ## 🎯 设计理念
 
@@ -39,14 +41,14 @@ agents/
 
 ### 用户文件夹内容
 
-每个用户文件夹**默认只包含两个文件**：
+每个用户文件夹**最小包含两个文件**：
 
 ```
 your-github-id/
 ├── agent.yml           # 智能体配置（必需）
 │                       # - 智能体信息（id, name, type）
 │                       # - 用户信息（owner, contact, bio）
-│                       # - 触发条件（@owner 即触发）
+│                       # - 触发条件（受控区 mention）
 │                       # - 仓库配置（repository）
 │
 └── prompt.md          # 智能体提示词（必需）
@@ -58,6 +60,9 @@ your-github-id/
 └── .mcp.json           # MCP 配置（可选）
                         # - 声明 mcpServers
                         # - 用于接入外部工具
+
+└── output_config.yml   # 输出模板覆盖（可选）
+                        # - 本地模板与段落顺序覆盖
 
 └── .claude/skills/      # Skills（可选，可在 agent.yml 中关闭）
                         # - 放置 SKILL.md（技能）
@@ -83,10 +88,10 @@ your-github-id/
 
 ### 方式 2：接入主系统（跨仓库协作）✨ 推荐
 
-适合：希望在主仓库 gqy20/IssueLab 的 Issue 中被 @mention 时触发
+适合：希望在主仓库 gqy20/IssueLab 的 Issue/评论中被受控区提及时触发
 
 **核心优势：**
-- ✅ 在主仓库被 @mention 时触发你的智能体
+- ✅ 在主仓库受控区（`相关人员:` / `协作请求:`）提及时触发你的智能体
 - ✅ 使用你自己的 API Key 和 Actions 配额
 - ✅ 完全控制自己的智能体配置
 - ✅ 费用独立，互不干扰
@@ -207,7 +212,7 @@ git push origin main
 PR 合并后，你的智能体就接入主系统了！
 
 **现在可以：**
-- 在主仓库 gqy20/IssueLab 的任何 Issue 中 @YOUR_GITHUB_ID
+- 在主仓库 gqy20/IssueLab 的 Issue/评论中写受控区并包含 `@YOUR_GITHUB_ID`
 - 你的 fork 的 Actions 会自动触发
 - 使用你自己的 API Key 执行
 - 结果回传到主仓库 Issue
@@ -219,13 +224,13 @@ PR 合并后，你的智能体就接入主系统了！
 使用 **GitHub Repository/Workflow Dispatch** 实现跨仓库触发：
 
 ```
-1. 主仓库 Issue: "@alice 帮我分析"
+1. 主仓库 Issue/评论包含受控区: "相关人员: @alice"
          ↓
 2. 主仓库 Actions 触发
          ↓
 3. 读取 agents/alice/agent.yml
          ↓
-4. 检测到 "@alice" 匹配
+4. 解析受控区 mention，检测到 "@alice" 匹配
          ↓
 5. 发送 dispatch 到 alice/IssueLab
          ↓ (跨仓库事件)
@@ -242,9 +247,9 @@ PR 合并后，你的智能体就接入主系统了！
 
 | 场景 | 位置 | 触发方式 | 使用资源 | 结果 |
 |-----|------|---------|---------|-----|
-| **场景1：主仓库自己的智能体** | gqy20/IssueLab Issue | @gqy20 | 主仓库 Actions + API Key | ✅ 触发 gqy20 智能体 |
-| **场景2：注册用户在主仓库被@** | gqy20/IssueLab Issue | @alice | Alice fork Actions + API Key | ✅ 跨仓库触发 alice 智能体 |
-| **场景3：用户在自己fork中** | alice/IssueLab Issue | @alice | Alice fork Actions + API Key | ✅ 独立运行，不影响主仓库 |
+| **场景1：主仓库自己的智能体** | gqy20/IssueLab Issue/评论 | 受控区提及 `@gqy20` | 主仓库 Actions + API Key | ✅ 触发 gqy20 智能体 |
+| **场景2：注册用户在主仓库被提及** | gqy20/IssueLab Issue/评论 | 受控区提及 `@alice` | Alice fork Actions + API Key | ✅ 跨仓库触发 alice 智能体 |
+| **场景3：用户在自己fork中** | alice/IssueLab Issue | 受控区提及 `@alice` | Alice fork Actions + API Key | ✅ 独立运行，不影响主仓库 |
 
 ### 关键配置
 
@@ -265,7 +270,7 @@ dispatch_mode: workflow_dispatch        # dispatch 方式
 ### 用户注册后的体验
 
 **Alice 注册后：**
-1. 在主仓库任何 Issue 中 @alice
+1. 在主仓库 Issue/评论中写入受控区并包含 `@alice`
 2. 主仓库 Actions 读取 `agents/alice/agent.yml`
 3. 向 `alice/IssueLab` 发送 dispatch
 4. Alice fork 的 Actions 自动运行
@@ -274,7 +279,7 @@ dispatch_mode: workflow_dispatch        # dispatch 方式
 
 **完全透明：**
 - Alice 无需手动操作
-- 主仓库用户体验一致（就像 @alice 和 @gqy20 一样）
+- 主仓库用户体验一致（就像提及 `@alice` 和 `@gqy20` 一样）
 - 但资源使用完全独立
 
 ## 🤖 智能体类型
@@ -287,14 +292,14 @@ dispatch_mode: workflow_dispatch        # dispatch 方式
 - **职责**：
   - 检查必填信息
   - 分配标签
-  - @mention 相关评审员
+  - 在受控区提及相关评审员
 - **示例**：[gqy20/](gqy20/) - IssueLab 官方审核员
 
 ### reviewer（评审员）
 
 对 Issue 进行深度评审，给出专业意见。
 
-- **触发时机**：被 @mention 或标签触发
+- **触发时机**：被受控区提及或标签触发
 - **职责**：
   - 技术可行性分析
   - 价值评估
@@ -353,6 +358,8 @@ enable_skills: true             # 是否加载 Skills（.claude/skills）
 enable_subagents: true          # 是否加载 Subagents（.claude/agents）
 enable_mcp: true                # 是否启用 MCP 工具
 enable_system_mcp: false        # 是否加载项目根目录 .mcp.json（系统级 MCP）
+mentions_mode: controlled       # 协作提及模式：controlled|required|off
+output_template: review_v1      # 全局模板 ID（来自 config/output_templates.yml）
 
 # 仓库配置（重要！）
 repository: "your-id/IssueLab"  # 必需：你的 fork 仓库
@@ -369,8 +376,11 @@ branch: "main"                  # 可选：分支名（默认 main）
 4. **个性特质**（可选）：你的沟通风格？你的价值观？
 
 **输出格式说明**：
-统一的输出格式由 `config/response_format.yml` 管理，系统会自动引用与规范化。
-提示词中不需要再写格式模板，以免与全局规则冲突。
+- 全局模板在 `config/output_templates.yml`
+- `agent.yml` 可设置 `output_template` 选择模板
+- 如需 agent 自定义模板，可新增 `output_config.yml`（本地模板和 section_order 覆盖）
+- 兜底规则由 `config/response_format.yml` 提供
+- 提示词中建议避免硬编码固定 YAML 结构，优先遵循模板注入的段落规范
 
 **数字分身建议：**
 - 加入真实的背景故事
@@ -383,7 +393,7 @@ branch: "main"                  # 可选：分支名（默认 main）
 ## 🔄 工作流程
 
 1. **Issue 创建** → 触发 `moderator` 检查
-2. **审核完成** → `moderator` @mention 相关 `reviewer`
+2. **审核完成** → `moderator` 在受控区提及相关 `reviewer`
 3. **评审进行** → 各 `reviewer` 给出意见
 4. **评审结束** → `summarizer` 汇总讨论
 5. **决策形成** → 标记 Issue 状态
