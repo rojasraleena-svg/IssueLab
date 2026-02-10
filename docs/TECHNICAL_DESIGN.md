@@ -131,6 +131,7 @@ on:
 **智能体配置文件格式**（`agents/<username>/agent.yml`）：
 
 ```yaml
+agent_type: user                 # 必需：user 或 system
 owner: alice                      # 必需：你的 GitHub ID
 contact: "alice@example.com"
 description: "你的智能体描述（用于协作指南）"
@@ -304,116 +305,37 @@ def dispatch_to_multiple_repos(repositories: list[str]) -> dict:
 
 ## 4. 自动触发系统
 
-### 4.1 问题：Bot 评论不触发 Workflow
+### 4.1 当前触发模型
 
-GitHub Actions 安全机制：
+IssueLab 当前采用两条触发链路：
 
-```
-github-actions bot 创建的评论
-    ↓
-不触发 issue_comment 事件
-    ↓
-无法触发其他 workflow
-```
+1. **Issue 事件链路（主仓库）**
+   - `@system_agent` 或 `/review`：由 `.github/workflows/orchestrator.yml` 处理
+   - `state:ready-for-review`：直接触发主仓库评审流程
+2. **Dispatch 链路（跨仓库）**
+   - `Observer` 判定后，调用 `src/issuelab/observer_trigger.py`
+   - `system` agent 触发主仓库 `agent.yml` workflow dispatch
+   - `user` agent 触发目标 fork 的 workflow dispatch/repository dispatch
 
-**影响：**
-- Observer 分析后发评论 → 无法触发其他 agent
-- Agent 回复后 → 无法触发后续流程
+### 4.2 判定与路由规则
 
-### 4.2 解决方案：混合触发机制
+判定规则统一以 `agents/<name>/agent.yml` 为准：
 
-**System Agent：通过 workflow dispatch 触发**
+- `agent_type: system` -> 走 `trigger_system_agent()`
+- `agent_type: user` -> 走 `trigger_user_agent()`
+- 未注册或禁用 -> 跳过触发并记录告警
 
-```yaml
-jobs:
-  run-agent:
-    steps:
-      - name: Run Moderator
-        run: gh workflow run agent.yml -f agent=moderator -f issue_number=1
-```
+关键实现文件：
 
-Observer 调用 workflow dispatch → 执行 system agent
+- `src/issuelab/observer_trigger.py`
+- `src/issuelab/agents/registry.py`
+- `.github/workflows/orchestrator.yml`
 
-**用户 Agent：通过 Dispatch 触发**
+### 4.3 设计约束
 
-```python
-# Observer 调用 dispatch.py
-dispatch_to_repo(
-    repository="alice/IssueLab",
-    workflow_file="user_agent.yml",
-    inputs={
-        "issue_number": issue_number,
-        "trigger_source": "observer"
-    }
-)
-```
-
-Observer 调用 dispatch → 跨仓库触发 → 用户 agent 执行
-
-### 4.3 Observer 架构
-
-```python
-class ObserverTrigger:
-    """Observer 自动触发 agent 的核心逻辑"""
-
-    def auto_trigger_agent(self, agent_name: str, issue_number: int):
-        """根据 agent 类型选择触发方式"""
-
-        # 1. 查找 agent 配置
-        agent_config = self.load_agent_config(agent_name)
-
-        # 2. 判断是 system 还是 user agent
-        if agent_config.get("agent_type") == "system":
-            # system：workflow dispatch
-            self.trigger_system_workflow(agent_name, issue_number)
-        else:
-            # 用户：dispatch
-            self.dispatch_to_user_repo(
-                repository=agent_config["repository"],
-                workflow_file=agent_config["workflow_file"],
-                inputs={"issue_number": issue_number}
-            )
-```
-
-### 4.4 TDD 实现过程
-
-我们使用测试驱动开发实现 Observer 自动触发：
-
-**测试先行：**
-
-```python
-def test_observer_trigger_system_agent():
-    """测试触发 system agent（通过 workflow dispatch）"""
-    trigger = ObserverTrigger()
-    trigger.auto_trigger_agent("moderator", issue_number=1)
-
-    # 验证：触发了 workflow dispatch
-    assert workflow_dispatch_was_called("agent.yml", "moderator", 1)
-
-def test_observer_trigger_user_agent():
-    """测试触发用户 agent（通过 dispatch）"""
-    trigger = ObserverTrigger()
-    trigger.auto_trigger_agent("alice", issue_number=1)
-
-    # 验证：发送了 dispatch
-    assert dispatch_was_called(repository="alice/IssueLab")
-```
-
-**实现代码：**
-
-```python
-def auto_trigger_agent(self, agent_name: str, issue_number: int):
-    """自动触发 agent"""
-    agent_config = self.registry.get_agent(agent_name)
-
-    if not agent_config or not agent_config.get("enabled"):
-        return
-
-    if agent_config.get("agent_type") == "system":
-        self.trigger_system_workflow(agent_name, issue_number)
-    else:
-        self.dispatch_to_user_repo(agent_config, issue_number)
-```
+1. 不再使用 `bot:trigger-*` label 作为 agent 执行入口（历史兼容已移除）。
+2. 不再保留 `builtin` 术语与别名函数，统一使用 `system/user`。
+3. 所有 agent 配置必须显式声明 `agent_type`，由 `scripts/validate_agent_pr.py` 校验。
 
 ---
 
@@ -583,10 +505,10 @@ class PaperSearchTool(Tool):
 
 **技术栈：**
 
-- Python 3.12+
+- Python 3.13+
 - uv (包管理)
 - Claude Agent SDK >= 0.1.27
 - GitHub Actions
 - GitHub App API
 
-最后更新：2026-02-03
+最后更新：2026-02-10
