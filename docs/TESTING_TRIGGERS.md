@@ -63,20 +63,15 @@ uv run pytest tests/test_cli.py -v              # CLI 命令测试
 ```python
 # 测试文件: tests/test_parser.py
 
-def test_parse_single_mention():
-    """测试解析单个 @mention"""
-    result = parse_agent_mentions("@moderator 请审核")
-    assert result == ["moderator"]
-
-def test_parse_multiple_mentions():
-    """测试解析多个 @mention"""
-    result = parse_agent_mentions("@moderator 审核，@reviewer_a 评审")
-    assert result == ["moderator", "reviewer_a"]
-
 def test_parse_unknown_mention_filtered():
     """未知 mention 应过滤"""
     result = parse_agent_mentions("@mod @reva")
     assert result == []
+
+def test_parse_mentions_with_digits_and_hyphen():
+    """支持带数字和连字符的 agent 名称"""
+    result = parse_agent_mentions("@gqy20 @agent-1")
+    assert result == ["gqy20", "agent-1"]
 ```
 
 #### 2. 运行解析器测试
@@ -385,24 +380,14 @@ uv run python -m issuelab list-agents
 #### 1. 测试 agents 参数解析
 
 ```python
-# tests/test_main.py
+# tests/test_cli.py
 
-def test_parse_agents_comma():
-    """测试逗号分隔格式"""
+def test_parse_agents_arg_variants():
+    """测试 CSV/空格/JSON 等多种 agents 输入格式"""
     from issuelab.__main__ import parse_agents_arg
 
     assert parse_agents_arg("moderator,reviewer_a") == ["moderator", "reviewer_a"]
-
-def test_parse_agents_space():
-    """测试空格分隔格式"""
-    from issuelab.__main__ import parse_agents_arg
-
     assert parse_agents_arg("moderator reviewer_a") == ["moderator", "reviewer_a"]
-
-def test_parse_agents_json():
-    """测试 JSON 数组格式"""
-    from issuelab.__main__ import parse_agents_arg
-
     assert parse_agents_arg('["moderator", "reviewer_a"]') == ["moderator", "reviewer_a"]
 ```
 
@@ -486,15 +471,15 @@ confidence: "high"
 | 工作流 | 触发条件 | 测试方法 |
 |--------|---------|---------|
 | `orchestrator.yml` | Issue 评论/标签事件 | 手动触发 Issue 事件 |
-| `dispatch_agents.yml` | 用户 @mention | 手动 @mention 用户 |
+| `dispatch_agents.yml` | Issue 正文包含受控区（`相关人员:` / `协作请求:`） | 手动编辑 Issue 正文并加入受控区 |
 
 ### 测试步骤
 
 #### 1. 测试 @Mention 触发
 
 ```bash
-# 在 Issue 下评论触发
-gh issue comment 1 --body "@moderator 请审核"
+# 在 Issue 下评论触发（受控区）
+gh issue comment 1 --body $'---\n相关人员: @moderator'
 
 # 查看 Actions 运行
 gh run list --workflow=orchestrator.yml

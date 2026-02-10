@@ -85,7 +85,7 @@ alice 的 fork 仓库接收触发
     ↓
 将结果回复到主仓库 Issue（使用 PAT_TOKEN）
 
-备注：用户输入的 @mention 仅用于触发工作流；Agent 输出中的通知对象统一通过 YAML 的 `mentions` 字段传递，正文不再解析 @mentions。
+备注：当前触发链路统一使用受控区（`相关人员:` / `协作请求:`）提取通知对象；不再依赖 YAML `mentions` 字段。
 ```
 
 ---

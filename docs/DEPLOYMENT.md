@@ -357,7 +357,7 @@ uv run pre-commit run --all-files
 uv run pytest
 
 # 运行特定测试
-uv run pytest tests/test_executor.py
+uv run pytest tests/test_sdk_executor.py
 
 # 带覆盖率
 uv run pytest --cov=src/issuelab

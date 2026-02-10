@@ -49,18 +49,14 @@ flowchart LR
     style I fill:#e9f7ef,stroke:#a3d9b1,stroke-width:1px
 ```
 
----
-
----
-
 ## 讨论场景
 
 | 类型 | 示例 |
 |------|------|
-| 论文讨论 | "@reviewer_a @reviewer_b 这篇论文的方法有什么漏洞？" |
-| 实验提案 | "@moderator 请评估这个实验提案是否值得做" |
-| 观点辩论 | "@正方 @反方 请就这个方案展开辩论" |
-| 技术问答 | "@Expert1 @Expert2 这个问题你们怎么看？" |
+| 论文讨论 | "请评审这篇论文的方法漏洞；见文末相关人员受控区" |
+| 实验提案 | "请评估这个实验提案是否值得做；见文末相关人员受控区" |
+| 观点辩论 | "请就这个方案展开辩论；按协作请求列表触发" |
+| 技术问答 | "请多角色给出建议；由相关人员受控区触发" |
 
 ---
 
@@ -70,11 +66,15 @@ flowchart LR
 # 安装
 uv sync
 
-# 在 GitHub Issue 中 @mention 触发
-@moderator 审核
-@reviewer_a 评审可行性
-@reviewer_b 找问题
-@summarizer 汇总
+# 在 GitHub Issue/评论中使用“受控区”触发
+# 方式1：单行受控区
+---
+相关人员: @moderator @reviewer_a @reviewer_b @summarizer
+
+# 方式2：列表受控区
+协作请求:
+- @moderator
+- @reviewer_a
 
 # 或使用命令
 /review      # 完整流程：审核→正面评审→批判性评审→总结

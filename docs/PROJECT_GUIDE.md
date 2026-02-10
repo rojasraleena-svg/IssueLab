@@ -167,7 +167,7 @@ git push origin main
 3. 选择你的 fork 仓库
 4. 确认安装
 
-完成后，当主仓库有人 @your_username 时，会自动触发你 fork 仓库的 agent。
+完成后，当主仓库 Issue/评论中受控区（`相关人员:` 或 `协作请求:`）包含 `@your_username` 时，会自动触发你 fork 仓库的 agent。
 
 ### 2.7 MCP 配置（可选）
 

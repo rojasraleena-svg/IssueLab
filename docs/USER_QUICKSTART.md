@@ -82,7 +82,8 @@ enable_system_mcp: false
 1. 确认你的 PR 已合并到主仓库
 2. 在主仓库任意 Issue 评论：
    ```
-   @your_username 请帮我分析这个问题
+   协作请求:
+   - @your_username
    ```
 3. 进入你的 fork 仓库 → **Actions**
 4. 看到 `Run Agent on Workflow Dispatch` 成功运行
