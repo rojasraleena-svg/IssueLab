@@ -11,5 +11,5 @@ def test_discover_agents_finds_gqy22():
     assert "gqy22" in agents
     assert agents["gqy22"]["description"] != ""
     assert len(agents["gqy22"]["prompt"]) > 0
-    # Prompt 应该不包含 frontmatter
+    # Prompt 应该是纯正文
     assert not agents["gqy22"]["prompt"].startswith("---")

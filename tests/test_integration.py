@@ -47,7 +47,7 @@ def test_all_prompts_loadable():
     for agent_name in agents:
         prompt = load_prompt(agent_name)
         assert len(prompt) > 0, f"Agent {agent_name} has empty prompt"
-        assert not prompt.startswith("---"), f"Agent {agent_name} prompt still contains frontmatter"
+        assert not prompt.startswith("---"), f"Agent {agent_name} prompt should be plain markdown"
 
 
 def test_agent_descriptions_present():

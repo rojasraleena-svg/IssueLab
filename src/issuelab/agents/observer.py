@@ -45,7 +45,7 @@ async def run_observer(issue_number: int, issue_title: str = "", issue_body: str
             "error": "Observer agent not found",
         }
 
-    # 获取 prompt（discover_agents 已移除 frontmatter）
+    # 获取 prompt
     prompt = observer_config["prompt"]
 
     # Issue 分析模式任务说明
@@ -249,7 +249,7 @@ async def run_observer_for_papers(
     # 构建论文上下文
     papers_context = build_papers_for_observer(papers)
 
-    # 获取 prompt（discover_agents 已移除 frontmatter）
+    # 获取 prompt
     prompt = arxiv_observer_config["prompt"]
 
     # 替换占位符
@@ -331,7 +331,7 @@ async def run_pubmed_observer_for_papers(
     # 构建文献上下文
     papers_context = build_pubmed_papers_for_observer(papers, query)
 
-    # 获取 prompt（discover_agents 已移除 frontmatter）
+    # 获取 prompt
     prompt = pubmed_observer_config["prompt"]
 
     # 替换占位符

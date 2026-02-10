@@ -53,11 +53,11 @@ def test_agent_metadata_parsing():
 
 
 def test_load_prompt_returns_string():
-    """load_prompt 应该返回字符串，不含frontmatter"""
+    """load_prompt 应该返回字符串（纯提示词正文）"""
     result = load_prompt("moderator")
     assert isinstance(result, str)
     assert len(result) > 0
-    # 验证 frontmatter 已被移除
+    # 验证 prompt 文件使用纯 markdown 正文
     assert not result.startswith("---")
 
 
@@ -146,7 +146,7 @@ def test_builtin_prompt_loaded_from_agents_dir(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     (agents_dir / "moderator" / "prompt.md").write_text(
-        "---\nagent: moderator\ndescription: from-prompt-frontmatter\n---\n# Moderator\nfrom agents",
+        "# Moderator\nfrom agents",
         encoding="utf-8",
     )
 

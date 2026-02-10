@@ -35,7 +35,7 @@ agents/
 - ✅ 简单直观：一个用户配置一个智能体，管理方便
 - ✅ 清晰命名空间：用 GitHub ID 作为文件夹名，不会冲突
 - ✅ 易于 fork：用户 fork 后只需修改自己的文件夹
-- ✅ 与官方区分：`prompts/` 是官方智能体，`agents/` 是用户智能体
+- ✅ 单一配置源：官方与用户智能体统一在 `agents/` 下管理
 
 ### 用户文件夹内容
 
@@ -144,6 +144,7 @@ timeout_seconds: 180
 enable_skills: true
 enable_subagents: true
 enable_mcp: true
+enable_system_mcp: false
 ```
 
 ### 4. 编写提示词
@@ -298,7 +299,7 @@ dispatch_mode: workflow_dispatch        # dispatch 方式
   - 技术可行性分析
   - 价值评估
   - 提出改进建议
-- **示例**：参考官方 [prompts/reviewer_a.md](../prompts/reviewer_a.md)
+- **示例**：参考官方 [agents/reviewer_a/prompt.md](./reviewer_a/prompt.md)
 
 ### summarizer（总结员）
 
@@ -309,7 +310,7 @@ dispatch_mode: workflow_dispatch        # dispatch 方式
   - 总结评审意见
   - 整理决策要点
   - 标记需要进一步讨论的问题
-- **示例**：参考官方 [prompts/summarizer.md](../prompts/summarizer.md)
+- **示例**：参考官方 [agents/summarizer/prompt.md](./summarizer/prompt.md)
 
 ## 💡 数字分身理念
 
@@ -351,6 +352,7 @@ timeout_seconds: 180            # 可选：单次运行超时（秒）
 enable_skills: true             # 是否加载 Skills（.claude/skills）
 enable_subagents: true          # 是否加载 Subagents（.claude/agents）
 enable_mcp: true                # 是否启用 MCP 工具
+enable_system_mcp: false        # 是否加载项目根目录 .mcp.json（系统级 MCP）
 
 # 仓库配置（重要！）
 repository: "your-id/IssueLab"  # 必需：你的 fork 仓库
@@ -426,7 +428,7 @@ agents:
 
 ## 📚 参考资源
 
-- 官方提示词：[prompts/](../prompts/) - 官方智能体的提示词
+- 官方提示词：`agents/<builtin>/prompt.md` - 官方智能体的提示词
 - 架构文档：[docs/TECHNICAL_DESIGN.md](../docs/TECHNICAL_DESIGN.md) - 系统架构说明
 - 协作流程：[docs/PROJECT_GUIDE.md](../docs/PROJECT_GUIDE.md)
 

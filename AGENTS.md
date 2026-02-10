@@ -4,7 +4,6 @@
 - `src/issuelab/`: core Python package (CLI entry points, agent execution, config, GitHub tooling).
 - `tests/`: pytest suite (unit and behavior coverage for parsing and agent orchestration).
 - `agents/`: per-user agent configs and prompts (e.g., `agents/<name>/agent.yml`, `agents/<name>/prompt.md`).
-- `prompts/`: built-in agent prompts with YAML frontmatter.
 - `scripts/`: lightweight wrappers for GitHub Actions (minimal deps, no full install).
 - `docs/`: [architecture, deployment, and setup guides](./docs/).
 - `config/`: workflow and runtime configuration assets.

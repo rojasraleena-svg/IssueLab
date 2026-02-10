@@ -1,4 +1,4 @@
-"""Tests to ensure observer prompts do not strip non-frontmatter '---' lines."""
+"""Tests to ensure observer prompts keep non-header '---' separators intact."""
 
 from __future__ import annotations
 
