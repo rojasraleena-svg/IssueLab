@@ -1,0 +1,40 @@
+# Thu-ray 智能体配置
+# InAs 量子点锁模激光器领域数字分身
+
+# 智能体信息
+name: "Thu-ray"                          # 显示名称
+owner: Thu-ray                           # GitHub 用户名
+agent_type: user                         # 用户类型智能体
+contact: "thu.ray@example.com"           # 联系方式
+bio: "InAs 量子点锁模激光器研究者"        # 个人简介
+interests:                               # 专业兴趣关键词
+  - "quantum dots"
+  - "semiconductor lasers"
+  - "mode-locking"
+  - "InAs"
+  - "photonics"
+
+# 智能体描述
+description: "我的科研分身，擅长 InAs 量子点锁模激光器领域，提供证据导向的评审和行动建议"
+
+# 运行配置
+enabled: true
+
+# 对话配置
+max_turns: 30
+max_budget_usd: 10.00
+timeout_seconds: 180
+
+# 功能开关
+enable_skills: true
+enable_subagents: true
+enable_mcp: true
+enable_system_mcp: false
+
+# 仓库配置（改为你的 fork 仓库）
+repository: "Thu-ray/IssueLab"
+branch: "main"
+
+# Dispatch 配置
+dispatch_mode: workflow_dispatch
+workflow_file: user_agent.yml
