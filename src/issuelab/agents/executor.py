@@ -23,7 +23,7 @@ from claude_agent_sdk import (
 
 from issuelab.agents.config import AgentConfig
 from issuelab.agents.options import create_agent_options, format_mcp_servers_for_prompt
-from issuelab.agents.registry import is_system_agent
+from issuelab.agents.registry import get_agent_config, is_system_agent
 from issuelab.logging_config import get_logger
 from issuelab.retry import retry_async
 from issuelab.utils.yaml_text import extract_yaml_block
@@ -31,6 +31,9 @@ from issuelab.utils.yaml_text import extract_yaml_block
 logger = get_logger(__name__)
 
 _SYSTEM_EXECUTION_TIMEOUT_SECONDS = 600
+
+_ALLOWED_OUTPUT_FORMATS = {"markdown", "yaml", "hybrid"}
+_ALLOWED_MENTIONS_MODES = {"controlled", "required", "off"}
 
 _OUTPUT_SCHEMA_BLOCK_MARKDOWN = (
     "\n\n## Output Format (required)\n"
@@ -55,6 +58,15 @@ _OUTPUT_SCHEMA_BLOCK_YAML = (
     "```\n"
 )
 
+_OUTPUT_SCHEMA_BLOCK_HYBRID = (
+    "\n\n## Output Format (required)\n"
+    "优先使用 Markdown 输出；仅在你无法稳定按 Markdown 结构输出时，才允许使用单个 YAML 代码块。\n"
+    "Markdown 结构优先：\n"
+    "- `## Summary`\n"
+    "- `## Key Findings`\n"
+    "- `## Recommended Actions`\n"
+)
+
 _DEFAULT_ATTEMPT_TIMEOUT_SECONDS = 90
 
 
@@ -70,13 +82,50 @@ def _should_retry_run_exception(exc: Exception) -> bool:
     return not isinstance(exc, TimeoutError | asyncio.CancelledError)
 
 
-def _append_output_schema(prompt: str, stage_name: str | None = None) -> str:
+def _normalize_output_format(value: Any) -> str:
+    if isinstance(value, str):
+        cleaned = value.strip().lower()
+        if cleaned in _ALLOWED_OUTPUT_FORMATS:
+            return cleaned
+    return "markdown"
+
+
+def _normalize_mentions_mode(value: Any) -> str:
+    if isinstance(value, str):
+        cleaned = value.strip().lower()
+        if cleaned in _ALLOWED_MENTIONS_MODES:
+            return cleaned
+    return "controlled"
+
+
+def _get_output_preferences(agent_name: str) -> tuple[str, str]:
+    try:
+        config = get_agent_config(agent_name) or {}
+    except Exception:
+        config = {}
+    return _normalize_output_format(config.get("output_format")), _normalize_mentions_mode(config.get("mentions_mode"))
+
+
+def _append_output_schema(
+    prompt: str, stage_name: str | None = None, *, output_format: str = "markdown", mentions_mode: str = "controlled"
+) -> str:
     """为 prompt 注入统一输出格式（如果尚未注入）。"""
     if "## Output Format (required)" in prompt:
         return prompt
     if stage_name:
         return f"{prompt}{_OUTPUT_SCHEMA_BLOCK_YAML}"
-    return f"{prompt}{_OUTPUT_SCHEMA_BLOCK_MARKDOWN}"
+
+    mention_instruction = {
+        "controlled": "- 如需触发协作，仅在文末使用受控区：`---\\n相关人员: @user1 @user2` 或 `协作请求:` 列表\n",
+        "required": "- 必须在文末使用受控区输出协作对象：`---\\n相关人员: @user1 @user2` 或 `协作请求:` 列表\n",
+        "off": "- 不要输出 `相关人员`/`协作请求` 受控区\n",
+    }.get(mentions_mode, "- 如需触发协作，仅在文末使用受控区：`---\\n相关人员: @user1 @user2` 或 `协作请求:` 列表\n")
+
+    if output_format == "yaml":
+        return f"{prompt}{_OUTPUT_SCHEMA_BLOCK_YAML}"
+    if output_format == "hybrid":
+        return f"{prompt}{_OUTPUT_SCHEMA_BLOCK_HYBRID}{mention_instruction}"
+    return f"{prompt}{_OUTPUT_SCHEMA_BLOCK_MARKDOWN}{mention_instruction}"
 
 
 async def run_single_agent(prompt: str, agent_name: str, *, stage_name: str | None = None) -> dict:
@@ -97,6 +146,7 @@ async def run_single_agent(prompt: str, agent_name: str, *, stage_name: str | No
     """
     logger.info(f"[{agent_name}] 开始运行 Agent")
     logger.debug(f"[{agent_name}] Prompt 长度: {len(prompt)} 字符")
+    output_format, mentions_mode = _get_output_preferences(agent_name)
 
     # 执行信息收集
     execution_info: dict[str, Any] = {
@@ -122,7 +172,9 @@ async def run_single_agent(prompt: str, agent_name: str, *, stage_name: str | No
         tool_calls = []
         first_result = True
 
-        effective_prompt = _append_output_schema(prompt, stage_name=stage_name)
+        effective_prompt = _append_output_schema(
+            prompt, stage_name=stage_name, output_format=output_format, mentions_mode=mentions_mode
+        )
         async for message in query(prompt=effective_prompt, options=options):
             # AssistantMessage: AI 响应（文本或工具调用）
             if isinstance(message, AssistantMessage):
@@ -224,8 +276,6 @@ async def run_single_agent(prompt: str, agent_name: str, *, stage_name: str | No
     def _get_timeout_seconds() -> int | None:
         config = None
         try:
-            from issuelab.agents.registry import get_agent_config
-
             config = get_agent_config(agent_name)
         except Exception:
             config = None
@@ -243,8 +293,6 @@ async def run_single_agent(prompt: str, agent_name: str, *, stage_name: str | No
     def _get_attempt_timeout_seconds(overall_timeout_seconds: int | None) -> int | None:
         config = None
         try:
-            from issuelab.agents.registry import get_agent_config
-
             config = get_agent_config(agent_name)
         except Exception:
             config = None

@@ -34,6 +34,8 @@ enable_skills: true              # 是否加载 Skills（.claude/skills）
 enable_subagents: true           # 是否加载 Subagents（.claude/agents）
 enable_mcp: true                 # 是否启用 MCP 工具（agent 目录下 .mcp.json）
 enable_system_mcp: false         # 是否加载项目根目录 .mcp.json（系统级 MCP）
+output_format: markdown          # 输出格式：markdown|yaml|hybrid（默认 markdown）
+mentions_mode: controlled        # mentions 策略：controlled|required|off（默认 controlled）
 
 # 仓库配置（重要：必须修改为你自己的 fork 仓库）
 repository: "your-github-id/IssueLab"  # 必需：你的 fork 仓库
@@ -77,3 +79,5 @@ workflow_file: user_agent.yml      # 可选：workflow_dispatch 模式时指定�
 #    - enable_subagents: 控制是否加载 Subagents（.claude/agents）
 #    - enable_mcp: 控制是否启用 MCP 工具（agent 目录下 .mcp.json）
 #    - enable_system_mcp: 控制是否加载项目根目录 .mcp.json（默认 false）
+#    - output_format: 控制输出格式（markdown/yaml/hybrid）
+#    - mentions_mode: 控制是否输出受控 mention 区域（controlled|required|off）

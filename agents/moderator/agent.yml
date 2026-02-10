@@ -12,6 +12,8 @@ enable_skills: false
 enable_subagents: false
 enable_mcp: false
 enable_system_mcp: false
+output_format: markdown
+mentions_mode: controlled
 
 repository: "gqy20/IssueLab"
 branch: "main"
