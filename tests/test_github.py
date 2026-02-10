@@ -3,7 +3,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from issuelab.tools.github import get_issue_info, post_comment, update_label
+from issuelab.tools.github import MAX_COMMENT_LENGTH, get_issue_info, post_comment, truncate_text, update_label
 
 
 def test_get_issue_info():
@@ -204,3 +204,46 @@ def test_update_label():
         # 新的实现返回 bool
         assert result is True
         mock_run.assert_called_once()
+
+
+def test_truncate_text_short_text_not_truncated():
+    text = "Short text"
+    result = truncate_text(text)
+    assert result == text
+    assert "已截断" not in result
+
+
+def test_truncate_text_exact_limit_not_truncated():
+    text = "a" * MAX_COMMENT_LENGTH
+    result = truncate_text(text)
+    assert len(result) == MAX_COMMENT_LENGTH
+    assert "已截断" not in result
+
+
+def test_truncate_text_long_text_truncated():
+    text = "a" * (MAX_COMMENT_LENGTH + 1000)
+    result = truncate_text(text)
+    assert len(result) <= MAX_COMMENT_LENGTH
+    assert "已截断" in result
+
+
+def test_truncate_text_at_paragraph_boundary():
+    paragraphs = ["段落" + str(i) + "\n\n" for i in range(100)]
+    text = "".join(paragraphs) * 100
+    result = truncate_text(text, max_length=1000)
+    assert len(result) <= 1000
+    assert "已截断" in result
+
+
+def test_truncate_text_custom_max_length():
+    text = "a" * 1000
+    result = truncate_text(text, max_length=100)
+    assert len(result) <= 100
+    assert "已截断" in result
+
+
+def test_truncate_text_preserves_encoding():
+    text = "中文测试" * 5000
+    result = truncate_text(text, max_length=1000)
+    assert len(result) <= 1000
+    assert isinstance(result, str)

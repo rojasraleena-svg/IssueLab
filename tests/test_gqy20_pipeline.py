@@ -179,3 +179,75 @@ confidence: "low"
     assert "证据不足" in result["response"]
     assert calls["count"] == 2
     assert "FallbackSingleStage" in result["stages"]
+
+
+@pytest.mark.asyncio
+async def test_gqy20_multistage_judge_uses_markdown_contract(monkeypatch):
+    from issuelab.agents import executor as ex
+
+    calls: list[dict[str, object]] = []
+
+    async def fake_run_single_agent(prompt: str, agent_name: str, *, stage_name: str | None = None):
+        calls.append({"prompt": prompt, "stage_name": stage_name})
+        if "当前阶段：Researcher" in prompt:
+            return {
+                "ok": True,
+                "response": """```yaml
+summary: "r"
+evidence:
+  - claim: "c"
+    source: "s"
+    url: "https://example.com/r"
+    confidence: "high"
+open_questions:
+  - "q"
+confidence: "high"
+```""",
+                "cost_usd": 0.01,
+                "num_turns": 1,
+                "tool_calls": ["Read"],
+                "input_tokens": 1,
+                "output_tokens": 1,
+                "total_tokens": 2,
+            }
+        if "当前阶段：Judge" in prompt:
+            return {
+                "ok": True,
+                "response": """[Agent: gqy20]
+
+## Summary
+ok
+
+## Sources
+- https://example.com/final
+""",
+                "cost_usd": 0.01,
+                "num_turns": 1,
+                "tool_calls": ["Read"],
+                "input_tokens": 1,
+                "output_tokens": 1,
+                "total_tokens": 2,
+            }
+        return {
+            "ok": True,
+            "response": """```yaml
+summary: "ok"
+findings: []
+recommendations: []
+confidence: "medium"
+```""",
+            "cost_usd": 0.01,
+            "num_turns": 1,
+            "tool_calls": ["Read"],
+            "input_tokens": 1,
+            "output_tokens": 1,
+            "total_tokens": 2,
+        }
+
+    monkeypatch.setattr(ex, "run_single_agent", fake_run_single_agent)
+    result = await ex._run_gqy20_multistage("agent prompt", 1, "ctx")
+
+    assert result["ok"] is True
+    judge_call = next(item for item in calls if "当前阶段：Judge" in str(item["prompt"]))
+    assert judge_call["stage_name"] is None
+    assert "最终输出必须是 Markdown" in str(judge_call["prompt"])

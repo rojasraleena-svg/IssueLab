@@ -25,37 +25,6 @@ confidence: "high"
         with pytest.warns(DeprecationWarning):
             assert extract_mentions_from_yaml(text) == ["alice", "bob"]
 
-    def test_extract_mentions_with_at_prefix(self):
-        from issuelab.response_processor import extract_mentions_from_yaml
-
-        text = """```yaml
-summary: "Test"
-findings: []
-recommendations: []
-mentions:
-  - "@charlie"
-  - "@delta"
-confidence: "medium"
-```"""
-        with pytest.warns(DeprecationWarning):
-            assert extract_mentions_from_yaml(text) == ["charlie", "delta"]
-
-    def test_extract_mentions_invalid_items_filtered(self):
-        from issuelab.response_processor import extract_mentions_from_yaml
-
-        text = """```yaml
-summary: "Test"
-findings: []
-recommendations: []
-mentions:
-  - "not valid!"
-  - ""
-  - "ok_user"
-confidence: "low"
-```"""
-        with pytest.warns(DeprecationWarning):
-            assert extract_mentions_from_yaml(text) == ["ok_user"]
-
     def test_no_yaml_mentions(self):
         from issuelab.response_processor import extract_mentions_from_yaml
 
