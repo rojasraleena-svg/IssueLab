@@ -108,14 +108,22 @@ jobs:
           fi
 
       - name: "Merge PR"
+        id: merge
         if: steps.decision.outputs.approve == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set +e
           gh pr merge ${{ github.event.pull_request.number }} --squash --delete-branch
+          STATUS=$?
+          set -e
+          echo "exit_code=$STATUS" >> $GITHUB_OUTPUT
+          if [ "$STATUS" -ne 0 ]; then
+            echo "PR is not mergeable right now; skip failing the workflow."
+          fi
 
       - name: "Thank After Merge"
-        if: steps.decision.outputs.approve == 'true'
+        if: steps.decision.outputs.approve == 'true' && steps.merge.outputs.exit_code == '0'
         uses: actions/github-script@v7
         with:
           script: |
@@ -125,6 +133,25 @@ jobs:
               '',
               'This PR has been auto-merged after Claude review. If you want anything adjusted, just comment here.'
             ].join('\\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body,
+            });
+
+      - name: "Comment When Merge Fails"
+        if: steps.decision.outputs.approve == 'true' && steps.merge.outputs.exit_code != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = [
+              'Claude review approved this PR, but GitHub could not merge it automatically.',
+              '',
+              'Please resolve conflicts with the base branch and push an updated head branch, then automation will retry.'
+            ].join('\n');
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
